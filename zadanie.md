@@ -15,7 +15,8 @@
 
 2) Получить из данных информацию о работе прибора:
 
-    G0_Status,G1_Status,G2_Status,G3_Status,G4_Status ,G5_Status,G6_Status  - статусы работы прибора:
+G0_Status,G1_Status,G2_Status,G3_Status,G4_Status ,G5_Status,G6_Status  - статусы работы прибора:
+    
     G0: работа TCA  (G0=0, standby) 
     G1: Камера 1 рабочий статус (G1=0, Ch1 = idle) 
     G2: Камера 2 рабочий статус (G2=0, Ch2 = idle) 
