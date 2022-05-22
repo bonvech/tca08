@@ -10,13 +10,14 @@ import serial
 
 class TCA08_device:
     def __init__(self):
-        self.develop = True ## flag True for develop stage
+        self.develop = False ## flag True for develop stage
+        self.logfilename = "tca08_log.txt"
 
         self.MINID = 0
         self.MAXID = 0
         self.pathfile = None  ## data directory name
 
-        ## for COM port
+        ##  COM port properties
         self.portName = None
         self.BPS = 115200
         self.PARITY = serial.PARITY_NONE
@@ -39,6 +40,12 @@ class TCA08_device:
 
         self.file_header = ''
         self.fill_header()  ## fill header
+
+        if 'ix' in os.name:
+            self.sep = '/'  ## -- path separator for LINIX
+        else:
+            self.sep = '\\' ## -- path separator for Windows
+
 
 
     ## ----------------------------------------------------------------
@@ -63,11 +70,21 @@ class TCA08_device:
         self.MINID = int(tcaconfig.MINID)
         self.MAXID = self.MINID
         self.pathfile = tcaconfig.path
+
+        try:
+            self.develop = tcaconfig.develop
+        except:
+            pass
+
+        if self.develop == True:
+            print("--------------------------------------------")
+            print("  Warning!   Run in emulation mode!    ")
+            print("--------------------------------------------")
         self.prepare_dirs()
 
 
     ## ----------------------------------------------------------------
-    ## make dirs to save data
+    ##  make dirs to save data
     ## ----------------------------------------------------------------
     def prepare_dirs(self):
         ## \todo ПОПРАВИТЬ в конфигурацилонном файле СЛЕШИ В ИМЕНИ ДИРЕКТОРИИ  !!!   для ВИНДА
@@ -77,17 +94,21 @@ class TCA08_device:
             sep = '\\' ## -- separator for Windows
 
         path = self.pathfile
-        os.system("mkdir " + path)
+        if not os.path.exists(path):   os.system("mkdir " + path)
         path = self.pathfile + sep + 'Data'
-        os.system("mkdir " + path)
+        if not os.path.exists(path):   os.system("mkdir " + path)
         path = self.pathfile + sep + 'OffLineData'
-        os.system("mkdir " + path)
+        if not os.path.exists(path):   os.system("mkdir " + path)
         path = self.pathfile + sep + 'OnLineData'
-        os.system("mkdir " + path)
+        if not os.path.exists(path):   os.system("mkdir " + path)
         path = self.pathfile + sep + 'Logs'
-        os.system("mkdir " + path)
+        if not os.path.exists(path):   os.system("mkdir " + path)
         path = self.pathfile + sep + 'table'
-        os.system("mkdir " + path)
+        if not os.path.exists(path):   os.system("mkdir " + path)
+        ## EXTDEVICEDATA
+        path = self.pathfile + sep + 'ExtDeviceData'
+        if not os.path.exists(path):   os.system("mkdir " + path)
+
 
 
     ## ----------------------------------------------------------------
@@ -116,14 +137,14 @@ class TCA08_device:
     ## print params from config file
     ## ----------------------------------------------------------------
     def print_params(self):
-        print("Directory for DATA: ",self.pathfile)
+        print("Directory for DATA: ", self.pathfile)
         print("portName = ", self.portName)
-        print("BPS = ",      self.BPS)
-        print("STOBITS  = ", self.STOPBITS)
-        print("PARITY   = ", self.PARITY)
-        print("BYTESIZE = ",self.BYTESIZE)
-        print("TIMEX = ",   self.TIMEX)
-        print("MINID = ",   self.MINID)
+        #print("BPS = ",      self.BPS)
+        #print("STOBITS  = ", self.STOPBITS)
+        #print("PARITY   = ", self.PARITY)
+        #print("BYTESIZE = ", self.BYTESIZE)
+        #print("TIMEX = ",    self.TIMEX)
+        print("MINID = ",    self.MINID)
 
 
     ## ----------------------------------------------------------------
@@ -156,19 +177,25 @@ class TCA08_device:
     ## Send request to COM port
     ## ----------------------------------------------------------------
     def request(self, command, start=0, stop=0):
-        f = open("data.dat", 'a') 
+        f = open(self.logfilename, 'a') 
+        self.buff = ""
 
         if command == '$TCA:STREAM 0':
             command += ' ' + str(start) + ' ' + str(stop)
         command += '\r\n'
-        print(command)
+        #print(command)
         f.write(str(command))
 
-        self.ser.write(command.encode())
-        time.sleep(1)
+        try:
+            self.ser.write(command.encode())
+        except:
+            text = '\nrequest(): Error in writing to COM port!\n Check: COM port is open?'
+            print(text)
+            f.write(text + '\n')
+            return -1
 
+        time.sleep(1)
         ## read answer from buffer
-        self.buff = ''
         while self.ser.in_waiting:
             line = str(self.ser.readline())
             if (line):
@@ -176,12 +203,21 @@ class TCA08_device:
                 print("{{"+line+"}}")
                 f.write("{{"+str(line)+"}}\n")
                 line=0
-
+        self.buff = self.buff.decode()
+        if len(self.buff) == 0:
+            text = 'Warning!! No answer to request for command' + command
+            print(text)
+            f.write(text + '\n')
+        print('request(): buff = ', self.buff)
         f.write("\n")
         f.close()
 
 
+    ## ----------------------------------------------------------------
+    ##  Get info from device
+    ## ----------------------------------------------------------------
     def get_info(self):
+        flog = open(self.logfilename, 'a') 
         if self.develop == False:
             self.request('$TCA:INFO', 0, 0)
         else:
@@ -192,11 +228,13 @@ class TCA08_device:
                         + b'Firmware version: 314\r\n'
                         + b'Software version: 1.3.2.0\r\n'
                         + b'Current date and time: 5/19/2022 1:28:13 PM\r\n'
-                        )
-        print(type(self.buff))
-        self.buff = self.buff.decode()
+                        ).decode()
+        #print(type(self.buff))
         self.info = self.buff
-        print("INFO:\n", self.info)
+        text = "-------------------\nINFO:\n" + self.info
+        print(text, sep='')
+        flog.write(text + '\n')
+        flog.close()
         if 'ix' in os.name:
             self.buff = self.buff.split("\n")   ## for Linux
         else:
@@ -205,6 +243,100 @@ class TCA08_device:
             if "Serial Number" in line:
                 self.device_name = line.split()[-1]
                 print("Device name =>" + self.device_name + "<=")
+
+
+    ## ----------------------------------------------------------------
+    ##  Get EXTDEVICEDATA
+    ## ----------------------------------------------------------------
+    def get_ext_device_data(self):
+        flog = open(self.logfilename, 'a') 
+        if self.develop == False:
+            self.request('$TCA:LAST EXTDEVICEDATA')
+        else:
+            self.buff = (b'4198813 4472972 18 14 52 989.2 4.4 0\r\n').decode()
+        text = "-------------------\nEXTDEVICEDATA:\n" + self.buff
+        print(text, sep='')
+        flog.write(text + '\n')
+        flog.close()
+
+        head = "ID1,ID2,E1,E2,E3,E4,E5,E6"
+        filename = self.pathfile + self.sep + 'ExtDeviceData' + self.sep
+        filename += 'ExtDeviceData.csv'
+        if not os.path.exists(filename):
+            f = open(filename, 'a')
+            f.write(head + "\n")
+        else:
+            f = open(filename, 'a')
+        f.write(",".join(self.buff.split()) + '\n')
+        f.close()
+
+
+    ## ----------------------------------------------------------------
+    ##  Get DATA with '$TCA:LAST DATA' command
+    ## ----------------------------------------------------------------
+    def get_data(self):
+        flog = open(self.logfilename, 'a') 
+        if self.develop == False:
+            self.request('$TCA:LAST DATA')
+        else:
+            self.buff = (b'4472971 5/19/2022 1:40:53 PM 20 60 1 2 1 0 0 0 1 Wait Sample 1432 S 1433 N n n n 16.6836 630 630 257 0 0 203 0 0 0 0 C C O O 43 27 0 0 0 0 0 0 0 0 0 0 0 0 29 29 31 0 0 40 40 51.394 99.1449 419.198 0.08593589 7.37411 0.05046773 2.43565 12.26107 12 2201 60\r\n').decode()
+            self.buff = '1602383,2018-11-16 23:59:59.073,11,20,1,2,1,4,0,0,1,Standby,866,Standby,867,N,n,n,n,16.6347,0,635,255,0,0,203,0,0,0,0,C,C,O,O,100,31,0,0,0,0,0,0,0,0,0,0,0,0,34,33,34,60,0,40,40,51.4907,99.3099,842.182,0.1488839,11.8919,0.07915366,9.36399,11.90369'
+        text = "-------------------\nDATA:\n" + self.buff
+        print(text, sep='')
+        flog.write(text + '\n')
+        flog.close()
+
+        ## write to datafile
+        ## Data file header
+        head = "ID TimeStamp SetupID Timebase G0_Status G1_Status G2_Status G3_Status G4_Status G5_Status G6_Status Ch1_Status Ch1_SampleID Ch2_Status Ch2_SampleID MainBoardStatus Ch1BoardStatus Ch2BoardStatus SensorBoardStatus FlowS setFlowS FlowS_RAW SamplePumpSpeed FlowA setFlowA FlowA_RAW AnalyticPumpSpeed Solenoid1 Solenoid2 Solenoid5 BallValve1 BallValve2 BallValve3 BallValve4 Ch1_Temp Ch2_Temp Ch1_Voltage1 setCh1Voltage1 Ch1_Current1 Ch1_Voltage2 setCh1Voltage2 Ch1_Current2 Ch2_Voltage1 setCh2Voltage1 Ch2_Current1 Ch2_Voltage2 setCh2Voltage2 Ch2_Current2 Ch1_SafetyTemp Ch2_SafetyTemp SafetyTempInt Fan1 Fan2 Fan3 Fan4 LicorTemp LicorPressure LicorCO2 LicorCO2abs LicorH2O LicorH2Oabs LicorH2Odewpoint LicorVoltage"
+
+        print("buff:", len(self.buff.split(',')), "head:", len(head.split()))
+        filename = self.pathfile + self.sep + 'Data' + self.sep
+        filename += 'Data.csv'
+        if not os.path.exists(filename):
+            f = open(filename, 'a')
+            f.write(",".join(head.split()) + "\n")
+        else:
+            f = open(filename, 'a')
+        #f.write(",".join(self.buff.split()) + '\n')
+        f.write(self.buff + '\n')
+        f.close()
+
+
+    ## ----------------------------------------------------------------
+    ##  Get ONLINERESULT with '$TCA:LAST ONLINERESULT' command
+    ## ----------------------------------------------------------------
+    def get_online_result(self):
+        flog = open(self.logfilename, 'a') 
+        if self.develop == False:
+            self.request('$TCA:LAST ONLINERESULT')
+        else:
+            ## from COM port
+            self.buff = (b'1411 1432 5/19/2022 9:00:00 AM 5/19/2022 10:00:00 AM 5/19/2022 12:00:00 PM 5/19/2022 1:00:00 PM 270.84 4669.2 4722 780 100 1 3942 780 414.88 988.91 1 20 433.513965697825 -0.052493927308238 0.0000621135375773269 -0.0000019112057832946 0.0000000107468045043784 -0.0000000000160651521958029 417.003817069674 -0.00519565725647155 0.0000407358928456258 -0.00000088209278033617 0.0000000036674856614354 -0.00000000000427524100286778\r\n').decode()
+            ## from docs
+            self.buff = '1,3,2018-09-05 09:20:00,2018-09-05 09:40:00,2018-09-05 11:20:00,2018-09-05 11:40:00,1618.25,18529.02,58708,0,0,1,0,0,678.83,315.61,1,4,734.11151923016,0.007605128934671236,-0.0008426029126914941,1.2467680585602101e-5,-5.7904734574089255e-8,8.278151418589865e-11,721.7721108681338,0.07058174812424729,-0.0033522482678232687,4.1361800378848836e-5,-1.7473727839550791e-7,2.3652177675724055e-10'
+
+        text = "-------------------\nONLINERESULT:\n" + self.buff
+        print(text, sep='')
+        flog.write(text + '\n')
+        flog.close()
+
+        ## write to datafile
+        ## Data file header
+        head = "ID SampleID StartTimeUTC EndTimeUTC StartTimeLocal EndTimeLocal TCcounts TCmass TCconc AE33_BC6 AE33_ValidData AE33_b OC EC CO2 Volume Chamber SetupID a1 b1 c1 d1 e1 f1 a2 b2 c2 d2 e2 f2"
+
+        print("buff:", len(self.buff.split(',')), "head:", len(head.split()))
+        filename = self.pathfile + self.sep + 'OnLineData' + self.sep
+        filename += 'OnLineData.csv'
+        if not os.path.exists(filename):
+            f = open(filename, 'a')
+            f.write(",".join(head.split()) + "\n")
+        else:
+            f = open(filename, 'a')
+        f.write(",".join(self.buff.split()) + '\n')
+        #f.write(self.buff + '\n')
+        f.close()
+
 
 
     ## ----------------------------------------------------------------
