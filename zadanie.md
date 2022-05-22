@@ -70,26 +70,26 @@ G0_Status,G1_Status,G2_Status,G3_Status,G4_Status ,G5_Status,G6_Status  - ста
 
 Имя экспортированного файла конструируется следующим образом: «Имя таблицы_дата_время.csv (“TableName_Date_Time.csv”) (ex. Data_23-10- 2018_15-53.csv). Примеры экспортированных файлов:  
 
-1)  Данные:
+1)  DATA - Данные:
 
     ID,TimeStamp,SetupID,Timebase,G0_Status,G1_Status,G2_Status,G3_Status,G4_Status,    G5_Status,G6_Status,Ch1_Status,Ch1_SampleID,Ch2_Status,Ch2_SampleID,MainBoar dStatus,Ch1BoardStatus,Ch2BoardStatus,SensorBoardStatus,FlowS,setFlowS,FlowS_ RAW,SamplePumpSpeed,FlowA,setFlowA,FlowA_RAW,AnalyticPumpSpeed,Solenoid 1,Solenoid2,Solenoid5,BallValve1,BallValve2,BallValve3,BallValve4,Ch1_Temp,Ch2_ Temp,Ch1_Voltage1,setCh1Voltage1,Ch1_Current1,Ch1_Voltage2,setCh1Voltage2,Ch 1_Current2,Ch2_Voltage1,setCh2Voltage1,Ch2_Current1,Ch2_Voltage2,setCh2Voltag e2,Ch2_Current2,Ch1_SafetyTemp,Ch2_SafetyTemp,SafetyTempInt,Fan1,Fan2,Fan3, Fan4,LicorTemp,LicorPressure,LicorCO2,LicorCO2abs,LicorH2O,LicorH2Oabs,Licor H2Odewpoint,LicorVoltage 
 
     1602383,2018-11-16 23:59:59.073,11,20,1,2,1,4,0,0,1,Standby,866,Standby,867,N,n,n,n,16.6347,0,635,25 5,0,0,203,0,0,0,0,C,C,O,O,100,31,0,0,0,0,0,0,0,0,0,0,0,0,34,33,34,60,0,40,40,51.4907,9 9.3099,842.182,0.1488839,11.8919,0.07915366,9.36399,11.90369
 
-2)  Результат онлайн: 
+2)  ONLINERESULT - Результат онлайн: 
 
     ID,SampleID,StartTimeUTC,EndTimeUTC,StartTimeLocal,EndTimeLocal,TCcounts,
     TCmass,TCconc,AE33_BC6,AE33_ValidData,AE33_b,OC,EC, CO2,Volume,Chamber,SetupID, a1,b1,c1,d1,e1,f1,a2,b2,c2,d2,e2,f2 
 
     1,3,2018-09-05 09:20:00,2018-09-05 09:40:00,2018-09-05 11:20:00,2018-09-05 11:40:00,1618.25,18529.02,58708,0,0,1,0,0,678.83,315.61,1,4,734.11151923016,0. 007605128934671236,-0.0008426029126914941,1.2467680585602101e-5,- 5.7904734574089255e-8,8.278151418589865e- 11,721.7721108681338,0.07058174812424729,- 0.0033522482678232687,4.1361800378848836e-5,-1.7473727839550791e- 7,2.3652177675724055e-10
 
-3)  Результат офлайн: 
+3)  OFFLINERESULT - Результат офлайн: 
 
     ID,SampleID,SampleName,StartTimeUTC,StartTimeLocal,TCcounts,TCmass,TCconc, PunchArea,DryingTime,Chamber,SetupID,a1,b1,c1,d1,e1,f1,a2,b2,c2,d2,e2,f2
 
     39,695,5_arso_20170215mm,2018-01-12 12:36:19,2018-01-12 13:36:19,17520.1621,214100,189335,1.1308,0,1,25,653.0881745453704,2.070347 518278751,-0.015783676941518294,5.743388472621944e-5,- 9.85991925184398e-8,6.435298788574163e-11,- 1921.268617466437,20.638064759183404,-
 
-4) Установки: 
+4) Setup - Установки: 
 
     ID,TimeStamp,SerialNumber,SetFlowS,SetFlowA,Area,FlowFormulaA,FlowFormulaB,
     FlowFormulaC,FlowFormulaD,FlowFormulaE,FlowFormulaF,CCch1,CCch2,SlopeTe mpCh1,InterceptTempCh1,SlopeTempCh2,InterceptTempCh2,SampleTime,C0,C1,C2,
