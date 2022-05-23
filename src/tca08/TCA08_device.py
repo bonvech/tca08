@@ -108,6 +108,9 @@ class TCA08_device:
         ## EXTDEVICEDATA
         path = self.pathfile + sep + 'ExtDeviceData'
         if not os.path.exists(path):   os.system("mkdir " + path)
+        ## SETUP
+        path = self.pathfile + sep + 'Setup'
+        if not os.path.exists(path):   os.system("mkdir " + path)
 
 
 
@@ -280,7 +283,7 @@ class TCA08_device:
             self.request('$TCA:LAST DATA')
         else:
             self.buff = (b'4472971 5/19/2022 1:40:53 PM 20 60 1 2 1 0 0 0 1 Wait Sample 1432 S 1433 N n n n 16.6836 630 630 257 0 0 203 0 0 0 0 C C O O 43 27 0 0 0 0 0 0 0 0 0 0 0 0 29 29 31 0 0 40 40 51.394 99.1449 419.198 0.08593589 7.37411 0.05046773 2.43565 12.26107 12 2201 60\r\n').decode()
-            self.buff = '1602383,2018-11-16 23:59:59.073,11,20,1,2,1,4,0,0,1,Standby,866,Standby,867,N,n,n,n,16.6347,0,635,255,0,0,203,0,0,0,0,C,C,O,O,100,31,0,0,0,0,0,0,0,0,0,0,0,0,34,33,34,60,0,40,40,51.4907,99.3099,842.182,0.1488839,11.8919,0.07915366,9.36399,11.90369'
+            #self.buff = '1602383,2018-11-16 23:59:59.073,11,20,1,2,1,4,0,0,1,Standby,866,Standby,867,N,n,n,n,16.6347,0,635,255,0,0,203,0,0,0,0,C,C,O,O,100,31,0,0,0,0,0,0,0,0,0,0,0,0,34,33,34,60,0,40,40,51.4907,99.3099,842.182,0.1488839,11.8919,0.07915366,9.36399,11.90369'
         text = "-------------------\nDATA:\n" + self.buff
         print(text, sep='')
         flog.write(text + '\n')
@@ -298,8 +301,8 @@ class TCA08_device:
             f.write(",".join(head.split()) + "\n")
         else:
             f = open(filename, 'a')
-        #f.write(",".join(self.buff.split()) + '\n')
-        f.write(self.buff + '\n')
+        f.write(",".join(self.buff.split()) + '\n')
+        #f.write(self.buff + '\n')
         f.close()
 
 
@@ -314,7 +317,7 @@ class TCA08_device:
             ## from COM port
             self.buff = (b'1411 1432 5/19/2022 9:00:00 AM 5/19/2022 10:00:00 AM 5/19/2022 12:00:00 PM 5/19/2022 1:00:00 PM 270.84 4669.2 4722 780 100 1 3942 780 414.88 988.91 1 20 433.513965697825 -0.052493927308238 0.0000621135375773269 -0.0000019112057832946 0.0000000107468045043784 -0.0000000000160651521958029 417.003817069674 -0.00519565725647155 0.0000407358928456258 -0.00000088209278033617 0.0000000036674856614354 -0.00000000000427524100286778\r\n').decode()
             ## from docs
-            self.buff = '1,3,2018-09-05 09:20:00,2018-09-05 09:40:00,2018-09-05 11:20:00,2018-09-05 11:40:00,1618.25,18529.02,58708,0,0,1,0,0,678.83,315.61,1,4,734.11151923016,0.007605128934671236,-0.0008426029126914941,1.2467680585602101e-5,-5.7904734574089255e-8,8.278151418589865e-11,721.7721108681338,0.07058174812424729,-0.0033522482678232687,4.1361800378848836e-5,-1.7473727839550791e-7,2.3652177675724055e-10'
+            #self.buff = '1,3,2018-09-05 09:20:00,2018-09-05 09:40:00,2018-09-05 11:20:00,2018-09-05 11:40:00,1618.25,18529.02,58708,0,0,1,0,0,678.83,315.61,1,4,734.11151923016,0.007605128934671236,-0.0008426029126914941,1.2467680585602101e-5,-5.7904734574089255e-8,8.278151418589865e-11,721.7721108681338,0.07058174812424729,-0.0033522482678232687,4.1361800378848836e-5,-1.7473727839550791e-7,2.3652177675724055e-10'
 
         text = "-------------------\nONLINERESULT:\n" + self.buff
         print(text, sep='')
@@ -336,6 +339,77 @@ class TCA08_device:
         f.write(",".join(self.buff.split()) + '\n')
         #f.write(self.buff + '\n')
         f.close()
+
+
+    ## ----------------------------------------------------------------
+    ##  Get OFFLINERESULT with '$TCA:LAST OFFLINERESULT' command
+    ## ----------------------------------------------------------------
+    def get_offline_result(self):
+        flog = open(self.logfilename, 'a') 
+        if self.develop == False:
+            self.request('$TCA:LAST OFFLINERESULT')
+        else:
+            ## from COM port
+            self.buff = (b'\r\n').decode()
+            ## from docs
+            self.buff = '39,695,5_arso_20170215mm,2018-01-12 12:36:19,2018-01-12 13:36:19,17520.1621,214100,189335,1.1308,0,1,25,653.0881745453704,2.070347518278751,-0.015783676941518294,5.743388472621944e-5,-9.85991925184398e-8,6.435298788574163e-11,-1921.268617466437,20.638064759183404,- Error in docs'
+
+        text = "-------------------\nOFFLINERESULT:\n" + self.buff
+        print(text, sep='')
+        flog.write(text + '\n')
+        flog.close()
+
+        ## write to datafile
+        ## Data file header
+        head = "ID SampleID SampleName StartTimeUTC StartTimeLocal TCcounts TCmass TCconc PunchArea DryingTime Chamber SetupID a1 b1 c1 d1 e1 f1 a2 b2 c2 d2 e2 f2"
+
+        print("buff:", len(self.buff.split(',')), "head:", len(head.split()))
+        filename = self.pathfile + self.sep + 'OffLineData' + self.sep
+        filename += 'OffLineData.csv'
+        if not os.path.exists(filename):
+            f = open(filename, 'a')
+            f.write(",".join(head.split()) + "\n")
+        else:
+            f = open(filename, 'a')
+        #f.write(",".join(self.buff.split()) + '\n')
+        f.write(self.buff + '\n')
+        f.close()
+
+
+    ## ----------------------------------------------------------------
+    ##  Get SETUP with '$TCA:LAST SETUP' command
+    ## ----------------------------------------------------------------
+    def get_setup(self):
+        flog = open(self.logfilename, 'a') 
+        if self.develop == False:
+            self.request('$TCA:LAST SETUP')
+        else:
+            ## from COM port
+            self.buff = (b'\r\n').decode()
+            ## from docs
+            self.buff = '1,2017-09-26 14:19:05,TCA-08-S00-00000,16.7,0.5,4.91,7.31204978640517e-5,-0.0357400687309517,10.0655216405797,9.76321196119687e-7,-4.46034050051914e-6,0.0185413211101763,11.45,11.45,1,0,1,0,60,300,3,12,57,3,495,3,12,57,3,180,265,265,220,265,265,220,100,50,100,1,25,101.325,0.1.0.0,301,1,UTC,1,0,0,0.45'
+        text = "-------------------\nSETUP:\n" + self.buff
+        print(text, sep='')
+        flog.write(text + '\n')
+        flog.close()
+
+        ## write to datafile
+        ## Data file header
+        head = "ID TimeStamp SerialNumber SetFlowS SetFlowA Area FlowFormulaA FlowFormulaB FlowFormulaC FlowFormulaD FlowFormulaE FlowFormulaF CCch1 CCch2 SlopeTempCh1 InterceptTempCh1 SlopeTempCh2 InterceptTempCh2 SampleTime C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 P11 P12 P13 P21 P22 P23 A0 A2 A3 FlowRepStd Temp Pressure SoftwareVersion FirmwareVersion AE33_b TimeZone DST TimeProtocol BHparamID FilterIntegrity_threshold"
+
+        print("buff:", len(self.buff.split(',')), "head:", len(head.split()))
+        filename = self.pathfile + self.sep + 'Setup' + self.sep
+        filename += 'Setup.csv'
+        if not os.path.exists(filename):
+            f = open(filename, 'a')
+            f.write(",".join(head.split()) + "\n")
+        else:
+            f = open(filename, 'a')
+        #.write(",".join(self.buff.split()) + '\n')
+        f.write(self.buff + '\n')
+        f.close()
+
+
 
 
 
