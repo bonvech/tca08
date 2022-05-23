@@ -200,18 +200,20 @@ class TCA08_device:
         time.sleep(1)
         ## read answer from buffer
         while self.ser.in_waiting:
-            line = str(self.ser.readline())
+            line = self.ser.readline().decode()
+            
             if (line):
                 self.buff += line
-                print("{{"+line+"}}")
+                #print("{{"+line+"}}")
                 f.write("{{"+str(line)+"}}\n")
                 line=0
-        self.buff = self.buff.decode()
+        #print(self.buff)
+        
         if len(self.buff) == 0:
             text = 'Warning!! No answer to request for command' + command
             print(text)
             f.write(text + '\n')
-        print('request(): buff = ', self.buff)
+        #print('request(): buff = ', self.buff)
         f.write("\n")
         f.close()
 

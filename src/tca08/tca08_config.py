@@ -1,7 +1,7 @@
 #
 # Directorry for DATA:
 #
-path = "./data"
+path = "data"
 #
 #
 # TCA08:   Serial Port:
