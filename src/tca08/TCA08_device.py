@@ -95,23 +95,12 @@ class TCA08_device:
 
         path = self.pathfile
         if not os.path.exists(path):   os.system("mkdir " + path)
-        path = self.pathfile + sep + 'Data'
-        if not os.path.exists(path):   os.system("mkdir " + path)
-        path = self.pathfile + sep + 'OffLineData'
-        if not os.path.exists(path):   os.system("mkdir " + path)
-        path = self.pathfile + sep + 'OnLineData'
-        if not os.path.exists(path):   os.system("mkdir " + path)
-        path = self.pathfile + sep + 'Logs'
-        if not os.path.exists(path):   os.system("mkdir " + path)
-        path = self.pathfile + sep + 'table'
-        if not os.path.exists(path):   os.system("mkdir " + path)
-        ## EXTDEVICEDATA
-        path = self.pathfile + sep + 'ExtDeviceData'
-        if not os.path.exists(path):   os.system("mkdir " + path)
-        ## SETUP
-        path = self.pathfile + sep + 'Setup'
-        if not os.path.exists(path):   os.system("mkdir " + path)
 
+        ## make dirs for different data files
+        dirs = ['Data', 'OffLineData', 'OnLineData', 'Logs', 'table', 'ExtDeviceData', 'Setup']
+        for name in dirs:
+            path = self.pathfile + sep + name
+            if not os.path.exists(path):   os.system("mkdir " + path)
 
 
     ## ----------------------------------------------------------------
@@ -180,6 +169,10 @@ class TCA08_device:
     ## Send request to COM port
     ## ----------------------------------------------------------------
     def request(self, command, start=0, stop=0):
+        if self.develop == True:
+            print("WARNING!!! Device run in simulation mode!!!\n")
+            return
+
         f = open(self.logfilename, 'a') 
         self.buff = ""
 
