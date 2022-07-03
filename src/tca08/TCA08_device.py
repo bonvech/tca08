@@ -197,25 +197,55 @@ class TCA08_device:
             f.write(text + '\n')
             return -1
 
-        time.sleep(1)
         ## read answer from buffer
-        while self.ser.in_waiting:
-            line = self.ser.readline().decode()
-            
-            if (line):
-                self.buff += line
-                #print("{{"+line+"}}")
-                f.write("{{"+str(line)+"}}\n")
-                line=0
-        #print(self.buff)
-        
-        if len(self.buff) == 0:
-            text = 'Warning!! No answer to request for command' + command
-            print(text)
-            f.write(text + '\n')
-        #print('request(): buff = ', self.buff)
+        if not 'END' in command:
+            time.sleep(1)
+            while self.ser.in_waiting:
+                line = str(self.ser.readline())
+                if (line):
+                    self.buff += line
+                    print("{{"+line+"}}")
+                    f.write("{{"+str(line)+"}}\n")
+                    line = 0
+            self.buff = self.buff.decode()
+            if len(self.buff) == 0:
+                text = 'Warning!! No answer to request for command' + command
+                print(text)
+                f.write(text + '\n')
+            print('request(): buff = ', self.buff)
         f.write("\n")
         f.close()
+
+
+    ## ----------------------------------------------------------------
+    ##  Replace three columns with time to one datetime column and insert ","
+    ## ----------------------------------------------------------------
+    def join_datetime_in_string(self, s):
+        #print(s)
+        s = s.split()
+        while "PM" in s or "AM" in s:
+            marker = "PM" if "PM" in s else "AM"
+            k = s.index(marker)
+            datestamp = " ".join(s[k-2:k+1])
+            #print("datastamp:", datestamp, end=' ')
+            datestamp = datetime.strptime(datestamp, "%m/%d/%Y %I:%M:%S %p")
+            #print("datastamp:", datestamp)
+            s.insert(k+1, str(datestamp.strftime("%Y-%m-%d %H:%M:%S")))
+            s = s[:k-2] + s[k+1:] ## удалить столбцы со временем, датой и AM/PM
+        #print(s)
+        return ','.join(s)
+
+
+    ## ----------------------------------------------------------------
+    ##  Find "Wait" and "sample" and join it to "Wait sample"
+    ## ----------------------------------------------------------------
+    def join_status_in_string(self, s):
+        s = s.split(',')
+        while "Wait" in s:
+            k = s.index("Wait")
+            s[k] = s[k] + ' ' + s[k+1]
+            s.pop(k+1)  ## удалить столбцы со временем, датой и AM/PM
+        return ','.join(s)
 
 
     ## ----------------------------------------------------------------
@@ -280,6 +310,7 @@ class TCA08_device:
     ##  Get DATA with '$TCA:LAST DATA' command
     ## ----------------------------------------------------------------
     def get_data(self):
+        ##  read data from COM port
         flog = open(self.logfilename, 'a') 
         if self.develop == False:
             self.request('$TCA:LAST DATA')
@@ -291,20 +322,24 @@ class TCA08_device:
         flog.write(text + '\n')
         flog.close()
 
+        ## reformat data to csv string
+        self.buff = self.join_datetime_in_string(self.buff)
+        self.buff = self.join_status_in_string(self.buff)
+
         ## write to datafile
         ## Data file header
         head = "ID TimeStamp SetupID Timebase G0_Status G1_Status G2_Status G3_Status G4_Status G5_Status G6_Status Ch1_Status Ch1_SampleID Ch2_Status Ch2_SampleID MainBoardStatus Ch1BoardStatus Ch2BoardStatus SensorBoardStatus FlowS setFlowS FlowS_RAW SamplePumpSpeed FlowA setFlowA FlowA_RAW AnalyticPumpSpeed Solenoid1 Solenoid2 Solenoid5 BallValve1 BallValve2 BallValve3 BallValve4 Ch1_Temp Ch2_Temp Ch1_Voltage1 setCh1Voltage1 Ch1_Current1 Ch1_Voltage2 setCh1Voltage2 Ch1_Current2 Ch2_Voltage1 setCh2Voltage1 Ch2_Current1 Ch2_Voltage2 setCh2Voltage2 Ch2_Current2 Ch1_SafetyTemp Ch2_SafetyTemp SafetyTempInt Fan1 Fan2 Fan3 Fan4 LicorTemp LicorPressure LicorCO2 LicorCO2abs LicorH2O LicorH2Oabs LicorH2Odewpoint LicorVoltage"
 
-        print("buff:", len(self.buff.split(',')), "head:", len(head.split()))
-        filename = self.pathfile + self.sep + 'Data' + self.sep
-        filename += 'Data.csv'
-        if not os.path.exists(filename):
-            f = open(filename, 'a')
+        #print("buff:", len(self.buff.split(',')), "head:", len(head.split()))
+        typename = 'Data'
+        filename = self.pathfile + self.sep + typename + self.sep
+        filename += typename + '.csv'
+        newfile = True if not os.path.exists(filename) else False
+        f = open(filename, 'a')
+        if newfile:
             f.write(",".join(head.split()) + "\n")
-        else:
-            f = open(filename, 'a')
-        f.write(",".join(self.buff.split()) + '\n')
-        #f.write(self.buff + '\n')
+        #f.write(",".join(self.buff.split()) + '\n')
+        f.write(self.buff + '\n')
         f.close()
 
 
@@ -326,21 +361,25 @@ class TCA08_device:
         flog.write(text + '\n')
         flog.close()
 
+        ## reformat data to csv string
+        self.buff = self.join_datetime_in_string(self.buff)
+
         ## write to datafile
         ## Data file header
         head = "ID SampleID StartTimeUTC EndTimeUTC StartTimeLocal EndTimeLocal TCcounts TCmass TCconc AE33_BC6 AE33_ValidData AE33_b OC EC CO2 Volume Chamber SetupID a1 b1 c1 d1 e1 f1 a2 b2 c2 d2 e2 f2"
 
-        print("buff:", len(self.buff.split(',')), "head:", len(head.split()))
-        filename = self.pathfile + self.sep + 'OnLineData' + self.sep
-        filename += 'OnLineData.csv'
-        if not os.path.exists(filename):
-            f = open(filename, 'a')
+        #print("buff:", len(self.buff.split(',')), "head:", len(head.split()))
+        typename = 'OnLineData'
+        filename = self.pathfile + self.sep + typename + self.sep
+        filename += typename + '.csv'
+        newfile = True if not os.path.exists(filename) else False
+        f = open(filename, 'a')
+        if newfile:
             f.write(",".join(head.split()) + "\n")
-        else:
-            f = open(filename, 'a')
-        f.write(",".join(self.buff.split()) + '\n')
-        #f.write(self.buff + '\n')
+        #f.write(",".join(self.buff.split()) + '\n')
+        f.write(self.buff + '\n')
         f.close()
+
 
 
     ## ----------------------------------------------------------------
@@ -351,7 +390,7 @@ class TCA08_device:
         if self.develop == False:
             self.request('$TCA:LAST OFFLINERESULT')
         else:
-            ## from COM port
+            ## simulate data from COM port
             self.buff = (b'\r\n').decode()
             ## from docs
             self.buff = '39,695,5_arso_20170215mm,2018-01-12 12:36:19,2018-01-12 13:36:19,17520.1621,214100,189335,1.1308,0,1,25,653.0881745453704,2.070347518278751,-0.015783676941518294,5.743388472621944e-5,-9.85991925184398e-8,6.435298788574163e-11,-1921.268617466437,20.638064759183404,- Error in docs'
@@ -378,6 +417,7 @@ class TCA08_device:
         f.close()
 
 
+
     ## ----------------------------------------------------------------
     ##  Get SETUP with '$TCA:LAST SETUP' command
     ## ----------------------------------------------------------------
@@ -389,7 +429,7 @@ class TCA08_device:
             ## from COM port
             self.buff = (b'\r\n').decode()
             ## from docs
-            self.buff = '1,2017-09-26 14:19:05,TCA-08-S00-00000,16.7,0.5,4.91,7.31204978640517e-5,-0.0357400687309517,10.0655216405797,9.76321196119687e-7,-4.46034050051914e-6,0.0185413211101763,11.45,11.45,1,0,1,0,60,300,3,12,57,3,495,3,12,57,3,180,265,265,220,265,265,220,100,50,100,1,25,101.325,0.1.0.0,301,1,UTC,1,0,0,0.45'
+            self.buff = '1,2017-09-26 14:19:05,TCA-08-S00-00000,16.7,0.5,4.91,7.31204978640517e-5,-0.0357400687309517,10.0655216405797,9.76321196119687e-7,-4.46034050051914e-6,0.0185413211101763,11.45,11.45,1,0,1,0,60,300,3,12,57,3,495,3,12,57,3,180,265,265,220,265,265,220,100,50,100,1,25,101.325,0.1.0.0,301,1,UTC,1,0,0,0.45, string from docs'
         text = "-------------------\nSETUP:\n" + self.buff
         print(text, sep='')
         flog.write(text + '\n')
@@ -418,6 +458,10 @@ class TCA08_device:
     ## ----------------------------------------------------------------
     ##  END
     ## ----------------------------------------------------------------
+
+
+
+
 
 ##    def request(self, command, start, stop):
 ##        if command == 'FETCH DATA':
@@ -522,7 +566,7 @@ class TCA08_device:
                 self.file_raw = open(filename, "a")
             self.file_raw.write(line)
             self.file_raw.write('\n')
-            
+
         self.file_raw.flush()
         self.mm = mm
         self.yy = yy
@@ -552,7 +596,7 @@ class TCA08_device:
         columns = ['Date(yyyy/MM/dd)', 'Time(hh:mm:ss)', 'BC1', 'BC2', 'BC3', 'BC4', 'BC5', 'BC6', 'BC7', 'BB(%)']
         colnums = [header.index(x) for x in columns]      
         rows_list = []
-        
+
         for line in self.buff[::-1]:
             #print('line:   ',line)
             yy, mm, _ = line.split()[0].split('/')
@@ -586,7 +630,7 @@ class TCA08_device:
                     need_check = False 
                 lastmm = mm
                 lastyy = yy
-              
+
             ## add line data to dataframe 
             line_to_dataframe = [line.split()[i] for i in colnums]
             #print("line_to_dataframe:>",line_to_dataframe)
@@ -595,7 +639,7 @@ class TCA08_device:
                                 + [float(line_to_dataframe[-1])]
             rows_list.append(line_to_dataframe)
             #print(rows_list)
-               
+
 
             ## check line to be added to datafile
             if need_check: # and len(lastline):
