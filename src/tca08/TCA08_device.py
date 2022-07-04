@@ -143,6 +143,9 @@ class TCA08_device:
     ## Open COM port
     ## ----------------------------------------------------------------
     def connect(self):
+        if self.develop == True:
+            print("connect(): WARNING!!! Device run in simulation mode!!!\n")
+            return
         self.ser = serial.Serial(
                 port =     self.portName,
                 baudrate = self.BPS,       # 115200,
@@ -161,8 +164,10 @@ class TCA08_device:
     ## Close COM port
     ## ----------------------------------------------------------------
     def unconnect(self):
+        if self.develop == True:
+            print("unconnect(): WARNING!!! Device run in simulation mode!!!\n")
+            return
         self.ser.close() # Закройте порт
-
 
 
     ## ----------------------------------------------------------------
@@ -170,7 +175,7 @@ class TCA08_device:
     ## ----------------------------------------------------------------
     def request(self, command, start=0, stop=0):
         if self.develop == True:
-            print("WARNING!!! Device run in simulation mode!!!\n")
+            print("request(): WARNING!!! Device run in simulation mode!!!\n")
             return
 
         f = open(self.logfilename, 'a') 
