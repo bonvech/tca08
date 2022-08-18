@@ -6,7 +6,7 @@ path = "data"
 #
 # TCA08:   Serial Port:
 #
-COM="COM1"
+COM="COM4"
 #
 #
 # TCA08:  Last Records:

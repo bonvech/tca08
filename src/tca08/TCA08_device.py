@@ -6,6 +6,9 @@ from datetime import datetime
 #import pandas as pd
 import os
 import serial
+# for bot
+import telebot
+import config
 
 
 class TCA08_device:
@@ -20,7 +23,7 @@ class TCA08_device:
         ##  COM port properties
         self.portName = None
         self.BPS = 115200
-        self.PARITY = serial.PARITY_NONE
+        self.PARITY   = serial.PARITY_NONE
         self.STOPBITS = serial.STOPBITS_ONE
         self.BYTESIZE = serial.EIGHTBITS
         self.TIMEX = 1
@@ -146,17 +149,33 @@ class TCA08_device:
         if self.develop == True:
             print("connect(): WARNING!!! Device run in simulation mode!!!\n")
             return
-        self.ser = serial.Serial(
+        try:
+            self.ser = serial.Serial(
                 port =     self.portName,
                 baudrate = self.BPS,       # 115200,
                 parity =   self.PARITY,    # serial.PARITY_NONE,
                 stopbits = self.STOPBITS,  # serial.STOPBITS_ONE,
-                bytesize = self.BYTESIZE   # serial.EIGHTBITS
+                bytesize = self.BYTESIZE,  # serial.EIGHTBITS
+                timeout  = 10
                 )
-        if (self.ser.isOpen()):
-            print("COM port open success\n")
-            return 0
-        print("CON port open failed\n")
+            if (self.ser.isOpen()):
+                print("COM port open success\n")
+                return 0
+            print("COM port open failed\n")
+            
+        except serial.serialutil.SerialException:
+            print("\n\nError in connect(): !!!!!!!! \nException type: serial.serialutil.SerialException")
+            print("Problem with port", self.portName)
+        except Exception as inst:
+            print("\n\nError in connect(): !!!!!!!! except Exception: ")
+            print("Exception type:", type(inst))    # the exception instance
+            #print(inst.args)    # arguments stored in .args
+            print("Exception args:", inst)          # __str__ allows args to be printed directly,
+                                 # but may be overridden in exception subclasses
+        
+        text = f"TCA08 port error: cannot connect to {self.portName} port"
+        bot = telebot.TeleBot(config.token, parse_mode=None)
+        bot.send_message(config.channel, text)
         return -1
 
 
@@ -199,13 +218,14 @@ class TCA08_device:
         if not 'END' in command:
             time.sleep(1)
             while self.ser.in_waiting:
-                line = str(self.ser.readline())
+                #line = str(self.ser.readline())
+                line = self.ser.readline().decode()
                 if (line):
-                    self.buff += line
+                    self.buff += line #.decode()
                     print("{{"+line+"}}")
                     f.write("{{"+str(line)+"}}\n")
                     line = 0
-            self.buff = self.buff.decode()
+            #self.buff = self.buff.decode()
             if len(self.buff) == 0:
                 text = 'Warning!! No answer to request for command' + command
                 print(text)
@@ -398,13 +418,14 @@ class TCA08_device:
         flog.write(text + '\n')
         flog.close()
 
-        ## write to datafile
+        ## write to datafileз
         ## Data file header
         head = "ID SampleID SampleName StartTimeUTC StartTimeLocal TCcounts TCmass TCconc PunchArea DryingTime Chamber SetupID a1 b1 c1 d1 e1 f1 a2 b2 c2 d2 e2 f2"
 
-        print("buff:", len(self.buff.split(',')), "head:", len(head.split()))
+        print("buff len:", len(self.buff.split(',')), "head len:", len(head.split()))
         filename = self.pathfile + self.sep + 'OffLineData' + self.sep
         filename += 'OffLineData.csv'
+        #print("filename: ", filename)
         if not os.path.exists(filename):
             f = open(filename, 'a')
             f.write(",".join(head.split()) + "\n")
@@ -413,6 +434,7 @@ class TCA08_device:
         #f.write(",".join(self.buff.split()) + '\n')
         f.write(self.buff + '\n')
         f.close()
+        #print("end of get_offline_result()")
 
 
 
