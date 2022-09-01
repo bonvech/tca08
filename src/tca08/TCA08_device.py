@@ -11,6 +11,7 @@ import telebot
 import config
 
 
+
 class TCA08_device:
     def __init__(self):
         self.develop = False ## flag True for develop stage
@@ -44,11 +45,26 @@ class TCA08_device:
         self.file_header = ''
         self.fill_header()  ## fill header
 
+        self.timestamp = str(datetime.now())[:7]
         if 'ix' in os.name:
             self.sep = '/'  ## -- path separator for LINIX
         else:
             self.sep = '\\' ## -- path separator for Windows
+            
+        ## write to log file
+        message = "============================================\n" + str(datetime.now()) + '  start'
+        self.print_message(message, '\n')
 
+
+
+    ## ----------------------------------------------------------------
+    ##  Print message to logfile
+    ## ----------------------------------------------------------------
+    def print_message(self, message, end=''):
+        print(message)
+        flog = open(self.logfilename,'a')
+        flog.write(message + end)
+        flog.close()
 
 
     ## ----------------------------------------------------------------
@@ -73,6 +89,7 @@ class TCA08_device:
         self.MINID = int(tcaconfig.MINID)
         self.MAXID = self.MINID
         self.pathfile = tcaconfig.path
+        self.compname = tcaconfig.computer
 
         try:
             self.develop = tcaconfig.develop
@@ -100,7 +117,7 @@ class TCA08_device:
         if not os.path.exists(path):   os.system("mkdir " + path)
 
         ## make dirs for different data files
-        dirs = ['Data', 'OffLineData', 'OnLineData', 'Logs', 'table', 'ExtDeviceData', 'Setup']
+        dirs = ['Data', 'OffLineData', 'OnLineResult', 'Logs', 'table', 'ExtDeviceData', 'Setup']
         for name in dirs:
             path = self.pathfile + sep + name
             if not os.path.exists(path):   os.system("mkdir " + path)
@@ -159,7 +176,7 @@ class TCA08_device:
                 timeout  = 10
                 )
             if (self.ser.isOpen()):
-                print("COM port open success\n")
+                self.print_message("COM port open success\n")
                 return 0
             print("COM port open failed\n")
             
@@ -176,6 +193,10 @@ class TCA08_device:
         text = f"TCA08 port error: cannot connect to {self.portName} port"
         bot = telebot.TeleBot(config.token, parse_mode=None)
         bot.send_message(config.channel, text)
+        ## write to log file
+        message = str(datetime.now()) + ' ' + text
+        self.print_message(message, '\n')
+        
         return -1
 
 
@@ -194,8 +215,8 @@ class TCA08_device:
     ## ----------------------------------------------------------------
     def request(self, command, start=0, stop=0):
         if self.develop == True:
-            print("request(): WARNING!!! Device run in simulation mode!!!\n")
-            return
+            self.print_message("request(): WARNING!!! Device run in simulation mode!!!\n")
+            return -1
 
         f = open(self.logfilename, 'a') 
         self.buff = ""
@@ -204,14 +225,16 @@ class TCA08_device:
             command += ' ' + str(start) + ' ' + str(stop)
         command += '\r\n'
         #print(command)
-        f.write(str(command))
+        f.write(str(command[:-1]))
 
+        ## write command to COM port
         try:
             self.ser.write(command.encode())
         except:
             text = '\nrequest(): Error in writing to COM port!\n Check: COM port is open?'
             print(text)
             f.write(text + '\n')
+            f.close()
             return -1
 
         ## read answer from buffer
@@ -222,17 +245,19 @@ class TCA08_device:
                 line = self.ser.readline().decode()
                 if (line):
                     self.buff += line #.decode()
-                    print("{{"+line+"}}")
-                    f.write("{{"+str(line)+"}}\n")
+                    #print("{{"+line+"}}")
+                    #f.write("{{"+str(line)+"}}\n")
                     line = 0
             #self.buff = self.buff.decode()
             if len(self.buff) == 0:
-                text = 'Warning!! No answer to request for command' + command
+                text = 'Warning!! No answer to request for command' + command[:-2]
                 print(text)
                 f.write(text + '\n')
-            print('request(): buff = ', self.buff)
+            print('request(): buff =>', self.buff, "<=", sep='')
+            f.write('request(): buff =>' + self.buff + "<=")
         f.write("\n")
         f.close()
+        return 0
 
 
     ## ----------------------------------------------------------------
@@ -302,26 +327,46 @@ class TCA08_device:
     ##  Get EXTDEVICEDATA
     ## ----------------------------------------------------------------
     def get_ext_device_data(self):
-        flog = open(self.logfilename, 'a') 
+        typename = 'ExtDeviceData'
+        
+        ## ask for data
         if self.develop == False:
             self.request('$TCA:LAST EXTDEVICEDATA')
         else:
             self.buff = (b'4198813 4472972 18 14 52 989.2 4.4 0\r\n').decode()
         text = "-------------------\nEXTDEVICEDATA:\n" + self.buff
-        print(text, sep='')
-        flog.write(text + '\n')
-        flog.close()
+        self.print_message(text)
 
-        head = "ID1,ID2,E1,E2,E3,E4,E5,E6"
-        filename = self.pathfile + self.sep + 'ExtDeviceData' + self.sep
-        filename += 'ExtDeviceData.csv'
-        if not os.path.exists(filename):
-            f = open(filename, 'a')
-            f.write(head + "\n")
-        else:
-            f = open(filename, 'a')
-        f.write(",".join(self.buff.split()) + '\n')
-        f.close()
+        ## open datafile
+        head_txt = "DataID,TimeStamp,DeviceID,DeviceData"
+        head_csv = "TimeStamp,DataID,DataID2,DeviceID,DeviceData"
+        head = {'.csv': "DataID,TimeStamp,DeviceID,DeviceData", 
+                '.txt': "TimeStamp,DataID,DataID2,DeviceID,DeviceData"}
+        datestamp = str(datetime.now())
+
+        for filetype in {'.csv', '.txt'}:
+            filename = self.pathfile + self.sep + typename + self.sep
+            filename += self.timestamp + "_" + typename + filetype
+            if not os.path.exists(filename):
+                f = open(filename, 'a')
+                f.write(head[filetype] + "\n")
+            else:
+                f = open(filename, 'a')
+                
+            ## compose dataline
+            if "txt" in filetype:
+                data = [datestamp,]
+                data += self.buff.split()[:3]
+            else:
+                data = [self.buff.split()[1], datestamp, ]
+                data.append(self.buff.split()[2])
+            data.append(' '.join(self.buff.split()[3:]))
+            #print(data)
+            dataline = ",".join(data) + '\n'
+            
+            ## write to datafile    
+            f.write(dataline)
+            f.close()
 
 
     ## ----------------------------------------------------------------
@@ -351,7 +396,7 @@ class TCA08_device:
         #print("buff:", len(self.buff.split(',')), "head:", len(head.split()))
         typename = 'Data'
         filename = self.pathfile + self.sep + typename + self.sep
-        filename += typename + '.csv'
+        filename += self.timestamp + "_" + typename + '.csv'
         newfile = True if not os.path.exists(filename) else False
         f = open(filename, 'a')
         if newfile:
@@ -387,9 +432,9 @@ class TCA08_device:
         head = "ID SampleID StartTimeUTC EndTimeUTC StartTimeLocal EndTimeLocal TCcounts TCmass TCconc AE33_BC6 AE33_ValidData AE33_b OC EC CO2 Volume Chamber SetupID a1 b1 c1 d1 e1 f1 a2 b2 c2 d2 e2 f2"
 
         #print("buff:", len(self.buff.split(',')), "head:", len(head.split()))
-        typename = 'OnLineData'
+        typename = 'OnLineResult'
         filename = self.pathfile + self.sep + typename + self.sep
-        filename += typename + '.csv'
+        filename += self.timestamp + "_" + typename + '.csv'
         newfile = True if not os.path.exists(filename) else False
         f = open(filename, 'a')
         if newfile:
@@ -423,8 +468,10 @@ class TCA08_device:
         head = "ID SampleID SampleName StartTimeUTC StartTimeLocal TCcounts TCmass TCconc PunchArea DryingTime Chamber SetupID a1 b1 c1 d1 e1 f1 a2 b2 c2 d2 e2 f2"
 
         print("buff len:", len(self.buff.split(',')), "head len:", len(head.split()))
-        filename = self.pathfile + self.sep + 'OffLineData' + self.sep
-        filename += 'OffLineData.csv'
+        typename = 'OffLineData'
+        filename = self.pathfile + self.sep + typename + self.sep
+        #filename += 'OffLineData.csv'
+        filename += self.timestamp + "_" + typename + '.csv'
         #print("filename: ", filename)
         if not os.path.exists(filename):
             f = open(filename, 'a')
@@ -460,8 +507,10 @@ class TCA08_device:
         head = "ID TimeStamp SerialNumber SetFlowS SetFlowA Area FlowFormulaA FlowFormulaB FlowFormulaC FlowFormulaD FlowFormulaE FlowFormulaF CCch1 CCch2 SlopeTempCh1 InterceptTempCh1 SlopeTempCh2 InterceptTempCh2 SampleTime C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 P11 P12 P13 P21 P22 P23 A0 A2 A3 FlowRepStd Temp Pressure SoftwareVersion FirmwareVersion AE33_b TimeZone DST TimeProtocol BHparamID FilterIntegrity_threshold"
 
         print("buff:", len(self.buff.split(',')), "head:", len(head.split()))
-        filename = self.pathfile + self.sep + 'Setup' + self.sep
-        filename += 'Setup.csv'
+        typename =  'Setup'
+        filename = self.pathfile + self.sep + typename + self.sep
+        filename += self.timestamp + "_" + typename + '.csv'
+        #filename += 'Setup.csv'
         if not os.path.exists(filename):
             f = open(filename, 'a')
             f.write(",".join(head.split()) + "\n")
