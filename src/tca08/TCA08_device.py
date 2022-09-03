@@ -52,7 +52,7 @@ class TCA08_device:
             self.sep = '\\' ## -- path separator for Windows
             
         ## write to log file
-        message = "============================================\n" + str(datetime.now()) + '  start'
+        message = "\n============================================\n" + str(datetime.now()) + '  start'
         self.print_message(message, '\n')
 
 
@@ -218,14 +218,14 @@ class TCA08_device:
             self.print_message("request(): WARNING!!! Device run in simulation mode!!!\n")
             return -1
 
-        f = open(self.logfilename, 'a') 
+        #f = open(self.logfilename, 'a') 
         self.buff = ""
 
         if command == '$TCA:STREAM 0':
             command += ' ' + str(start) + ' ' + str(stop)
         command += '\r\n'
         #print(command)
-        f.write(str(command[:-1]))
+        #f.write(str(command[:-1]))
 
         ## write command to COM port
         try:
@@ -233,8 +233,8 @@ class TCA08_device:
         except:
             text = '\nrequest(): Error in writing to COM port!\n Check: COM port is open?'
             print(text)
-            f.write(text + '\n')
-            f.close()
+            #f.write(text + '\n')
+            #f.close()
             return -1
 
         ## read answer from buffer
@@ -252,11 +252,11 @@ class TCA08_device:
             if len(self.buff) == 0:
                 text = 'Warning!! No answer to request for command' + command[:-2]
                 print(text)
-                f.write(text + '\n')
+                #f.write(text + '\n')
             print('request(): buff =>', self.buff, "<=", sep='')
-            f.write('request(): buff =>' + self.buff + "<=")
-        f.write("\n")
-        f.close()
+            #f.write('request(): buff =>' + self.buff + "<=")
+        #f.write("\n")
+        #f.close()
         return 0
 
 
@@ -295,7 +295,7 @@ class TCA08_device:
     ##  Get info from device
     ## ----------------------------------------------------------------
     def get_info(self):
-        flog = open(self.logfilename, 'a') 
+        #flog = open(self.logfilename, 'a') 
         if self.develop == False:
             self.request('$TCA:INFO', 0, 0)
         else:
@@ -311,8 +311,8 @@ class TCA08_device:
         self.info = self.buff
         text = "-------------------\nINFO:\n" + self.info
         print(text, sep='')
-        flog.write(text + '\n')
-        flog.close()
+        #flog.write(text + '\n')
+        #flog.close()
         if 'ix' in os.name:
             self.buff = self.buff.split("\n")   ## for Linux
         else:
@@ -320,7 +320,8 @@ class TCA08_device:
         for line in self.buff[::]:
             if "Serial Number" in line:
                 self.device_name = line.split()[-1]
-                print("Device name =>" + self.device_name + "<=")
+                text = "Device name =>" + self.device_name + "<="
+                self.print_message(text)
 
 
     ## ----------------------------------------------------------------
@@ -335,7 +336,7 @@ class TCA08_device:
         else:
             self.buff = (b'4198813 4472972 18 14 52 989.2 4.4 0\r\n').decode()
         text = "-------------------\nEXTDEVICEDATA:\n" + self.buff
-        self.print_message(text)
+        #self.print_message(text)
 
         ## open datafile
         head_txt = "DataID,TimeStamp,DeviceID,DeviceData"
@@ -344,14 +345,15 @@ class TCA08_device:
                 '.txt': "TimeStamp,DataID,DataID2,DeviceID,DeviceData"}
         datestamp = str(datetime.now())
 
+        ## erite to datafile
         for filetype in {'.csv', '.txt'}:
             filename = self.pathfile + self.sep + typename + self.sep
             filename += self.timestamp + "_" + typename + filetype
             if not os.path.exists(filename):
-                f = open(filename, 'a')
-                f.write(head[filetype] + "\n")
+                fdat = open(filename, 'a')
+                fdat.write(head[filetype] + "\n")
             else:
-                f = open(filename, 'a')
+                fdat = open(filename, 'a')
                 
             ## compose dataline
             if "txt" in filetype:
@@ -365,8 +367,8 @@ class TCA08_device:
             dataline = ",".join(data) + '\n'
             
             ## write to datafile    
-            f.write(dataline)
-            f.close()
+            fdat.write(dataline)
+            fdat.close()
 
 
     ## ----------------------------------------------------------------
@@ -374,7 +376,7 @@ class TCA08_device:
     ## ----------------------------------------------------------------
     def get_data(self):
         ##  read data from COM port
-        flog = open(self.logfilename, 'a') 
+        #flog = open(self.logfilename, 'a') 
         if self.develop == False:
             self.request('$TCA:LAST DATA')
         else:
@@ -382,8 +384,8 @@ class TCA08_device:
             #self.buff = '1602383,2018-11-16 23:59:59.073,11,20,1,2,1,4,0,0,1,Standby,866,Standby,867,N,n,n,n,16.6347,0,635,255,0,0,203,0,0,0,0,C,C,O,O,100,31,0,0,0,0,0,0,0,0,0,0,0,0,34,33,34,60,0,40,40,51.4907,99.3099,842.182,0.1488839,11.8919,0.07915366,9.36399,11.90369'
         text = "-------------------\nDATA:\n" + self.buff
         print(text, sep='')
-        flog.write(text + '\n')
-        flog.close()
+        #flog.write(text + '\n')
+        #flog.close()
 
         ## reformat data to csv string
         self.buff = self.join_datetime_in_string(self.buff)
@@ -398,19 +400,19 @@ class TCA08_device:
         filename = self.pathfile + self.sep + typename + self.sep
         filename += self.timestamp + "_" + typename + '.csv'
         newfile = True if not os.path.exists(filename) else False
-        f = open(filename, 'a')
+        fdat = open(filename, 'a')
         if newfile:
-            f.write(",".join(head.split()) + "\n")
+            fdat.write(",".join(head.split()) + "\n")
         #f.write(",".join(self.buff.split()) + '\n')
-        f.write(self.buff + '\n')
-        f.close()
+        fdat.write(self.buff + '\n')
+        fdat.close()
 
 
     ## ----------------------------------------------------------------
     ##  Get ONLINERESULT with '$TCA:LAST ONLINERESULT' command
     ## ----------------------------------------------------------------
     def get_online_result(self):
-        flog = open(self.logfilename, 'a') 
+        #flog = open(self.logfilename, 'a') 
         if self.develop == False:
             self.request('$TCA:LAST ONLINERESULT')
         else:
@@ -421,8 +423,8 @@ class TCA08_device:
 
         text = "-------------------\nONLINERESULT:\n" + self.buff
         print(text, sep='')
-        flog.write(text + '\n')
-        flog.close()
+        #flog.write(text + '\n')
+        #flog.close()
 
         ## reformat data to csv string
         self.buff = self.join_datetime_in_string(self.buff)
@@ -436,12 +438,12 @@ class TCA08_device:
         filename = self.pathfile + self.sep + typename + self.sep
         filename += self.timestamp + "_" + typename + '.csv'
         newfile = True if not os.path.exists(filename) else False
-        f = open(filename, 'a')
+        fdat = open(filename, 'a')
         if newfile:
-            f.write(",".join(head.split()) + "\n")
+            fdat.write(",".join(head.split()) + "\n")
         #f.write(",".join(self.buff.split()) + '\n')
-        f.write(self.buff + '\n')
-        f.close()
+        fdat.write(self.buff + '\n')
+        fdat.close()
 
 
 
@@ -449,7 +451,7 @@ class TCA08_device:
     ##  Get OFFLINERESULT with '$TCA:LAST OFFLINERESULT' command
     ## ----------------------------------------------------------------
     def get_offline_result(self):
-        flog = open(self.logfilename, 'a') 
+        #flog = open(self.logfilename, 'a') 
         if self.develop == False:
             self.request('$TCA:LAST OFFLINERESULT')
         else:
@@ -460,8 +462,8 @@ class TCA08_device:
 
         text = "-------------------\nOFFLINERESULT:\n" + self.buff
         print(text, sep='')
-        flog.write(text + '\n')
-        flog.close()
+        #flog.write(text + '\n')
+        #flog.close()
 
         ## write to datafileз
         ## Data file header
@@ -474,13 +476,13 @@ class TCA08_device:
         filename += self.timestamp + "_" + typename + '.csv'
         #print("filename: ", filename)
         if not os.path.exists(filename):
-            f = open(filename, 'a')
-            f.write(",".join(head.split()) + "\n")
+            fdat = open(filename, 'a')
+            fdat.write(",".join(head.split()) + "\n")
         else:
-            f = open(filename, 'a')
+            fdat = open(filename, 'a')
         #f.write(",".join(self.buff.split()) + '\n')
-        f.write(self.buff + '\n')
-        f.close()
+        fdat.write(self.buff + '\n')
+        fdat.close()
         #print("end of get_offline_result()")
 
 
@@ -489,7 +491,7 @@ class TCA08_device:
     ##  Get SETUP with '$TCA:LAST SETUP' command
     ## ----------------------------------------------------------------
     def get_setup(self):
-        flog = open(self.logfilename, 'a') 
+        #flog = open(self.logfilename, 'a') 
         if self.develop == False:
             self.request('$TCA:LAST SETUP')
         else:
@@ -499,8 +501,8 @@ class TCA08_device:
             self.buff = '1,2017-09-26 14:19:05,TCA-08-S00-00000,16.7,0.5,4.91,7.31204978640517e-5,-0.0357400687309517,10.0655216405797,9.76321196119687e-7,-4.46034050051914e-6,0.0185413211101763,11.45,11.45,1,0,1,0,60,300,3,12,57,3,495,3,12,57,3,180,265,265,220,265,265,220,100,50,100,1,25,101.325,0.1.0.0,301,1,UTC,1,0,0,0.45, string from docs'
         text = "-------------------\nSETUP:\n" + self.buff
         print(text, sep='')
-        flog.write(text + '\n')
-        flog.close()
+        #flog.write(text + '\n')
+        #flog.close()
 
         ## write to datafile
         ## Data file header
@@ -512,13 +514,13 @@ class TCA08_device:
         filename += self.timestamp + "_" + typename + '.csv'
         #filename += 'Setup.csv'
         if not os.path.exists(filename):
-            f = open(filename, 'a')
-            f.write(",".join(head.split()) + "\n")
+            fdat = open(filename, 'a')
+            fdat.write(",".join(head.split()) + "\n")
         else:
-            f = open(filename, 'a')
+            fdat = open(filename, 'a')
         #.write(",".join(self.buff.split()) + '\n')
-        f.write(self.buff + '\n')
-        f.close()
+        fdat.write(self.buff + '\n')
+        fdat.close()
 
 
 
@@ -740,169 +742,3 @@ class TCA08_device:
 ##        dataframe_from_buffer['Date.1'] = dataframe_from_buffer['Date']
 ##        dataframe_from_buffer['Time (Moscow).1'] = dataframe_from_buffer['Time (Moscow)']
 ##        print(dataframe_from_buffer.head())
-##
-##        ##### excel file #####                
-##        xlsfilename = yy + '_TCA-S08-01006.xlsx'
-##        xlsfilename = self.pathfile + 'tableW/' + xlsfilename
-##        self.xlsfilename = xlsfilename
-##        ## read or cleate datafame
-##        xlsdata = self.read_dataframe_from_excel_file(xlsfilename)
-##        print(xlsdata.head())
-##        if xlsdata.shape[0]:
-##            dropset = ['Date', 'Time (Moscow)']
-##            xlsdata = xlsdata.append(dataframe_from_buffer, ignore_index=True).drop_duplicates(subset=dropset, keep='last')
-##            #print("Append:", xlsdata)
-##            xlsdata.set_index('Date').to_excel(xlsfilename, engine='openpyxl')
-##        else:
-##            print("New data:")
-##            dataframe_from_buffer.set_index('Date').to_excel(xlsfilename, engine='openpyxl')
-##            #dataframe_from_buffer.to_excel(xlsfilename, engine='openpyxl')
-
-    def parse_format_D_data(self):
-        ## main
-        if len(self.buff) < 10:
-            return
-        #self.buff = self.buff.split("TCA>")
-        if 'ix' in os.name:
-            self.buff = self.buff.split("\n")  ## for Linux
-        else:
-            self.buff = self.buff.split("\r\n") ## for Windows
-
-        lastmm, lastyy = '0', '0'
-        filename = ''
-        lastline = ''
-        need_check = True
-        dateformat = "%Y/%m/%d %H:%M:%S"
-        #print('lines:')
-        #print(self.buff)
-
-        ## for excel data
-        header = self.file_header[self.file_header.find("Date"):].split("; ")
-        columns = ['Date(yyyy/MM/dd)', 'Time(hh:mm:ss)', 'BC1', 'BC2', 'BC3', 'BC4', 'BC5', 'BC6', 'BC7', 'BB(%)']
-        colnums = [header.index(x) for x in columns]      
-        rows_list = []
-        
-        for line in self.buff[::-1]:
-            #print('line:   ',line)
-            yy, mm, _ = line.split()[0].split('/')
-            #print(yy, mm)
-
-            # for first line or new file
-            if mm != lastmm or yy != lastyy:
-                ##### ddat file 
-                filename = '_'.join((yy, mm)) + '_TCA-S08-01006.ddat'
-                filename = self.pathfile +'\ddat\\' + filename
-                print(filename,mm,yy,lastmm,lastyy)
-                try:
-                    ## ddat file exists
-                    f = open(filename, 'r')
-                    lastline = f.readlines()[-1].split()
-                    #print(lastline)
-                    f.close()
-                    print('3')
-                    lasttime = lastline[0] + ' ' + lastline[1]
-                    print('1  ',lasttime)
-                    lasttime = datetime.strptime(lasttime, dateformat)
-                    print('4',lastmm,lastyy,mm,yy)
-                    need_check = True
-                except:
-                    ## no file
-                    print('NOT FILE', filename)
-                    f = open(filename, 'a')        
-                    f.write(self.file_header)
-                    f.close()
-                    lastline = []
-                    need_check = False 
-                lastmm = mm
-                lastyy = yy
-              
-            ## add line data to dataframe 
-            line_to_dataframe = [line.split()[i] for i in colnums]
-            #print("line_to_dataframe:>",line_to_dataframe)
-            line_to_dataframe = line_to_dataframe[:2]\
-                                + [int(x) for x in line_to_dataframe[2:-1]]\
-                                + [float(line_to_dataframe[-1])]
-            rows_list.append(line_to_dataframe)
-            #print(rows_list)
-               
-
-            ## check line to be added to datafile
-            if need_check: # and len(lastline):
-                #print(line)
-                nowtime  = line.split()[0] + ' ' + line.split()[1]
-                #print(nowtime)
-                nowtime  = datetime.strptime(nowtime,  dateformat)
-                print(nowtime - lasttime)
-                ## if line was printed earlier
-                if nowtime <= lasttime:
-                    continue
-
-            need_check = False
-
-            ## write to file
-            f = open(filename, 'a')
-            f.write(line+'\n')
-            f.close()
-            
-
-        ## ##### write dataframe to excel file
-        ## make dataFrame from list
-        excel_columns = ['Date', 'Time (Moscow)', 'BC1', 'BC2', 'BC3', 'BC4', 'BC5', 'BC6',
-            'BC7', 'BB(%)', 'BCbb', 'BCff', 'Date.1', 'Time (Moscow).1']
-        dataframe_from_buffer = pd.DataFrame(rows_list, columns=excel_columns[:-4])
-        ## add columns
-        dataframe_from_buffer['BCbb'] = dataframe_from_buffer['BB(%)'].astype(float) * dataframe_from_buffer['BC5'].astype(float) / 100
-        dataframe_from_buffer['BCff'] = (100 - dataframe_from_buffer['BB(%)'].astype(float)) / 100 *  dataframe_from_buffer['BC5'].astype(float)
-        dataframe_from_buffer['Date.1'] = dataframe_from_buffer['Date']
-        dataframe_from_buffer['Time (Moscow).1'] = dataframe_from_buffer['Time (Moscow)']
-        print(dataframe_from_buffer.head())
-
-        ##### excel file #####                
-        xlsfilename = yy + '_TCA-S08-01006.xlsx'
-        xlsfilename = self.pathfile + 'table/' + xlsfilename
-        self.xlsfilename = xlsfilename
-        ## read or cleate datafame
-        xlsdata = self.read_dataframe_from_excel_file(xlsfilename)
-        print(xlsdata.head())
-        if xlsdata.shape[0]:
-            dropset = ['Date', 'Time (Moscow)']
-            xlsdata = xlsdata.append(dataframe_from_buffer, ignore_index=True).drop_duplicates(subset=dropset, keep='last')
-            #print("Append:", xlsdata)
-            xlsdata.set_index('Date').to_excel(xlsfilename, engine='openpyxl')
-        else:
-            print("New data:")
-            dataframe_from_buffer.set_index('Date').to_excel(xlsfilename, engine='openpyxl')
-            #dataframe_from_buffer.to_excel(xlsfilename, engine='openpyxl')
-
-
-    def read_dataframe_from_excel_file(self, xlsfilename):
-        columns = ['Date', 'Time (Moscow)', 'BC1', 'BC2', 'BC3', 'BC4', 'BC5', 'BC6',
-            'BC7', 'BB(%)', 'BCbb', 'BCff', 'Date.1', 'Time (Moscow).1']
-        try:
-            ## read excel file to dataframe
-            ## need to make "pip install openpyxl==3.0.9" if there are problems with excel file reading
-            datum = pd.read_excel(xlsfilename)
-            print(xlsfilename, "read")
-        except:
-            # create excel 
-            datum = pd.DataFrame(columns=columns)
-            print("No file", xlsfilename)
-            
-        return datum
-
-
-    def plot_from_excel_file(self, xlsfilename):
-        try:
-            ## read excel file to dataframe
-            ## need to make "pip install openpyxl==3.0.9" if there are problems with excel file reading
-            datum = pd.read_excel(xlsfilename)
-        except:
-            print("Error! No excel data file:", xlsfilename)
-            return
-
-        fig = plt.figure(figsize=(14, 5))
-        plt.plot(datum["BCff"][-2880:], 'k', label='BCff')
-        plt.plot(datum["BCbb"][-2880:], 'orange', label='BCbb')
-        plt.legend()
-        plt.grid()
-        plt.savefig('Moscow_bb.png', bbox_inches='tight')
