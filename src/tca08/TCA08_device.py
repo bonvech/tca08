@@ -190,7 +190,7 @@ class TCA08_device:
             print("Exception args:", inst)          # __str__ allows args to be printed directly,
                                  # but may be overridden in exception subclasses
         
-        text = f"TCA08 port error: cannot connect to {self.portName} port"
+        text = f"TCA08 port error: cannot connect to {self.portName} port from {self.compname}"
         bot = telebot.TeleBot(config.token, parse_mode=None)
         bot.send_message(config.channel, text)
         ## write to log file
