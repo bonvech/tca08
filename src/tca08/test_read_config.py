@@ -20,4 +20,4 @@ device.get_offline_result()
 device.request('$TCA:END')
 device.unconnect()
 
-x = input("Press ENTER to finish...")
+#x = input("Press ENTER to finish...")

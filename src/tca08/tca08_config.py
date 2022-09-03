@@ -1,7 +1,7 @@
 #
 # Directorry for DATA:
 #
-path = "data"
+path = "..\..\data"
 #
 #
 # TCA08:   Serial Port:
@@ -13,3 +13,4 @@ COM="COM4"
 #
 MINID=943370
 #
+computer='IKMO_Server'
