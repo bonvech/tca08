@@ -368,6 +368,7 @@ class TCA08_device:
             
             ## write to datafile    
             fdat.write(dataline)
+            fdat.flush()
             fdat.close()
 
 
@@ -405,6 +406,7 @@ class TCA08_device:
             fdat.write(",".join(head.split()) + "\n")
         #f.write(",".join(self.buff.split()) + '\n')
         fdat.write(self.buff + '\n')
+        fdat.flush()
         fdat.close()
 
 
@@ -443,6 +445,7 @@ class TCA08_device:
             fdat.write(",".join(head.split()) + "\n")
         #f.write(",".join(self.buff.split()) + '\n')
         fdat.write(self.buff + '\n')
+        fdat.flush()
         fdat.close()
 
 
@@ -482,6 +485,7 @@ class TCA08_device:
             fdat = open(filename, 'a')
         #f.write(",".join(self.buff.split()) + '\n')
         fdat.write(self.buff + '\n')
+        fdat.flush()
         fdat.close()
         #print("end of get_offline_result()")
 
@@ -520,6 +524,7 @@ class TCA08_device:
             fdat = open(filename, 'a')
         #.write(",".join(self.buff.split()) + '\n')
         fdat.write(self.buff + '\n')
+        fdat.flush()
         fdat.close()
 
 
