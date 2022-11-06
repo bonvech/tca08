@@ -172,17 +172,26 @@ if __name__ == "__main__":
     #timestamp = '2022-08'
     timestamp = str(datetime.now())[:7]
     print("timestamp:", timestamp)
-    datadirname = "..\\..\\data" + sep
-    path_to_figures = "..\\..\\figures" + sep
+    datadirname = ".." + sep + ".." + sep + "data" + sep
+    path_to_figures = ".." + sep + ".." + sep + "figures" + sep
+    print(datadirname, path_to_figures, sep='\n')
     ## check path to figures
     if not os.path.exists(path_to_figures):   
         os.system("mkdir " + path_to_figures)
     
 
     ## read OnlineData
-    filetype = 'OnlineResult'
+    filetype = 'OnLineResult'
     dirname = datadirname + filetype + sep
     csvfilename = dirname + timestamp + "_" + filetype + ".csv"   #-22_13-52.csv"
+
+    if not os.path.exists(datadirname):   
+        print(datadirname, "not exists")
+    if not os.path.exists(dirname):   
+        print(dirname, "not exists")
+    if not os.path.exists(csvfilename):   
+        print(csvfilename, "not exists")
+
     datum = pd.read_csv(csvfilename)
     #print(datum)
 
