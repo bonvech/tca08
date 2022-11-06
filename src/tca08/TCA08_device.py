@@ -3,6 +3,7 @@ import socket
 import time
 import datetime
 from datetime import datetime
+from datetime import timedelta
 #import pandas as pd
 import os
 import serial
@@ -327,15 +328,20 @@ class TCA08_device:
     ## ----------------------------------------------------------------
     ##  Get EXTDEVICEDATA
     ## ----------------------------------------------------------------
-    def get_ext_device_data(self):
+    def get_ext_device_data(self, dummy=False):
         typename = 'ExtDeviceData'
         
         ## ask for data
-        if self.develop == False:
-            self.request('$TCA:LAST EXTDEVICEDATA')
+        if not dummy:
+            if self.develop == False:
+                self.request('$TCA:LAST EXTDEVICEDATA')
+            else:
+                self.buff = (b'4198813 4472972 18 14 52 989.2 4.4 0\r\n').decode()
         else:
-            self.buff = (b'4198813 4472972 18 14 52 989.2 4.4 0\r\n').decode()
+            self.buff = 'dummy dummy data'
+
         text = "-------------------\nEXTDEVICEDATA:\n" + self.buff
+        print(text, sep='')
         #self.print_message(text)
 
         ## open datafile
@@ -345,7 +351,7 @@ class TCA08_device:
                 '.txt': "TimeStamp,DataID,DataID2,DeviceID,DeviceData"}
         datestamp = str(datetime.now())
 
-        ## erite to datafile
+        ## write to datafile
         for filetype in {'.csv', '.txt'}:
             filename = self.pathfile + self.sep + typename + self.sep
             filename += self.timestamp + "_" + typename + filetype
@@ -358,11 +364,20 @@ class TCA08_device:
             ## compose dataline
             if "txt" in filetype:
                 data = [datestamp,]
-                data += self.buff.split()[:3]
+                if not dummy:
+                    data += self.buff.split()[:3]
+                else:
+                    data += [''] * 3
             else:
                 data = [self.buff.split()[1], datestamp, ]
-                data.append(self.buff.split()[2])
-            data.append(' '.join(self.buff.split()[3:]))
+                if not dummy:
+                    data.append(self.buff.split()[2])
+                else:
+                    data += ['']
+            if not dummy:
+                data.append(' '.join(self.buff.split()[3:]))
+            else:
+                data += ['']
             #print(data)
             dataline = ",".join(data) + '\n'
             
@@ -370,7 +385,7 @@ class TCA08_device:
             fdat.write(dataline)
             fdat.flush()
             fdat.close()
-
+    
 
     ## ----------------------------------------------------------------
     ##  Get DATA with '$TCA:LAST DATA' command
@@ -413,29 +428,34 @@ class TCA08_device:
     ## ----------------------------------------------------------------
     ##  Get ONLINERESULT with '$TCA:LAST ONLINERESULT' command
     ## ----------------------------------------------------------------
-    def get_online_result(self):
-        #flog = open(self.logfilename, 'a') 
-        if self.develop == False:
-            self.request('$TCA:LAST ONLINERESULT')
-        else:
-            ## from COM port
-            self.buff = (b'1411 1432 5/19/2022 9:00:00 AM 5/19/2022 10:00:00 AM 5/19/2022 12:00:00 PM 5/19/2022 1:00:00 PM 270.84 4669.2 4722 780 100 1 3942 780 414.88 988.91 1 20 433.513965697825 -0.052493927308238 0.0000621135375773269 -0.0000019112057832946 0.0000000107468045043784 -0.0000000000160651521958029 417.003817069674 -0.00519565725647155 0.0000407358928456258 -0.00000088209278033617 0.0000000036674856614354 -0.00000000000427524100286778\r\n').decode()
-            ## from docs
-            #self.buff = '1,3,2018-09-05 09:20:00,2018-09-05 09:40:00,2018-09-05 11:20:00,2018-09-05 11:40:00,1618.25,18529.02,58708,0,0,1,0,0,678.83,315.61,1,4,734.11151923016,0.007605128934671236,-0.0008426029126914941,1.2467680585602101e-5,-5.7904734574089255e-8,8.278151418589865e-11,721.7721108681338,0.07058174812424729,-0.0033522482678232687,4.1361800378848836e-5,-1.7473727839550791e-7,2.3652177675724055e-10'
-
-        text = "-------------------\nONLINERESULT:\n" + self.buff
-        print(text, sep='')
-        #flog.write(text + '\n')
-        #flog.close()
-
-        ## reformat data to csv string
-        self.buff = self.join_datetime_in_string(self.buff)
-
-        ## write to datafile
+    def get_online_result(self, dummy=False):
         ## Data file header
         head = "ID SampleID StartTimeUTC EndTimeUTC StartTimeLocal EndTimeLocal TCcounts TCmass TCconc AE33_BC6 AE33_ValidData AE33_b OC EC CO2 Volume Chamber SetupID a1 b1 c1 d1 e1 f1 a2 b2 c2 d2 e2 f2"
 
+        if not dummy:        
+            if self.develop == False:
+                self.request('$TCA:LAST ONLINERESULT')
+            else:
+                ## from COM port
+                self.buff = (b'1411 1432 5/19/2022 9:00:00 AM 5/19/2022 10:00:00 AM 5/19/2022 12:00:00 PM 5/19/2022 1:00:00 PM 270.84 4669.2 4722 780 100 1 3942 780 414.88 988.91 1 20 433.513965697825 -0.052493927308238 0.0000621135375773269 -0.0000019112057832946 0.0000000107468045043784 -0.0000000000160651521958029 417.003817069674 -0.00519565725647155 0.0000407358928456258 -0.00000088209278033617 0.0000000036674856614354 -0.00000000000427524100286778\r\n').decode()
+                ## from docs
+                #self.buff = '1,3,2018-09-05 09:20:00,2018-09-05 09:40:00,2018-09-05 11:20:00,2018-09-05 11:40:00,1618.25,18529.02,58708,0,0,1,0,0,678.83,315.61,1,4,734.11151923016,0.007605128934671236,-0.0008426029126914941,1.2467680585602101e-5,-5.7904734574089255e-8,8.278151418589865e-11,721.7721108681338,0.07058174812424729,-0.0033522482678232687,4.1361800378848836e-5,-1.7473727839550791e-7,2.3652177675724055e-10'
+        else:
+            self.buff = 'dummy data'
+
+        text = "-------------------\nONLINERESULT:\n" + self.buff
+        print(text, sep='')
+
+        ## reformat data to csv string
+        if not dummy:
+            self.buff = self.join_datetime_in_string(self.buff)
+        else:
+            datestamp = str(datetime.now() - timedelta(hours=1))[:19]
+            self.buff = ",".join([''] * 2 + [datestamp] * 4 + [''] * (len(head.split()) - 6))
+
         #print("buff:", len(self.buff.split(',')), "head:", len(head.split()))
+
+        ## write to datafile
         typename = 'OnLineResult'
         filename = self.pathfile + self.sep + typename + self.sep
         filename += self.timestamp + "_" + typename + '.csv'
