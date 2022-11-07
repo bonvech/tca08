@@ -197,12 +197,15 @@ if __name__ == "__main__":
 
     ## plot OnlineData day
     plot_tca_online(datum)
-    plt.savefig(path_to_figures + 'tca_' + filetype.lower() + '_day.svg', facecolor='white', bbox_inches='tight') 
+    plt.savefig(path_to_figures + 'tca_' + filetype.lower() + '_day.svg', facecolor='white', bbox_inches='tight')
+    plt.savefig(path_to_figures + 'tca_' + filetype.lower() + '_day.png', facecolor='white', bbox_inches='tight') 
+
     print("Online 2day done")
 
     ## plot OnlineData week
     plot_tca_online(datum, 'week')
     plt.savefig(path_to_figures + 'tca_' + filetype.lower() + '_week.svg', facecolor='white', bbox_inches='tight') 
+    plt.savefig(path_to_figures + 'tca_' + filetype.lower() + '_week.png', facecolor='white', bbox_inches='tight') 
     print("Online twoweeks done")
 
 
@@ -218,9 +221,11 @@ if __name__ == "__main__":
     ## plot ExtDeviceData day
     plot_tca_pressure_and_temp(ext18)
     plt.savefig(path_to_figures + 'tca_' + filetype.lower() + '_day.svg', facecolor='white', bbox_inches='tight') 
+    plt.savefig(path_to_figures + 'tca_' + filetype.lower() + '_day.png', facecolor='white', bbox_inches='tight') 
     
     ## plot ExtDeviceData week
     plot_tca_pressure_and_temp(ext18, 'week')
     plt.savefig(path_to_figures + 'tca_' + filetype.lower() + '_week.svg', facecolor='white', bbox_inches='tight') 
+    plt.savefig(path_to_figures + 'tca_' + filetype.lower() + '_week.png', facecolor='white', bbox_inches='tight') 
     
     #x = input("Press Enter")
