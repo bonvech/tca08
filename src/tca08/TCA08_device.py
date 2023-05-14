@@ -11,6 +11,11 @@ import serial
 import telebot
 import config
 
+try:
+    from tca08_error_parser import *
+except:
+    print("\n!!!__init()__ Error!! No file \"tca08_error_parser.py\" to import!!!\n\n")
+    exit()
 
 
 class TCA08_device:
@@ -52,6 +57,7 @@ class TCA08_device:
         else:
             self.sep = '\\' ## -- path separator for Windows
             
+        
         ## write to log file
         message = "\n============================================\n" + str(datetime.now()) + '  start'
         self.print_message(message, '\n')
@@ -63,7 +69,7 @@ class TCA08_device:
     ## ----------------------------------------------------------------
     def print_message(self, message, end=''):
         print(message)
-        flog = open(self.logfilename,'a')
+        flog = open(self.logfilename, 'a')
         flog.write(message + end)
         flog.close()
 
@@ -178,7 +184,7 @@ class TCA08_device:
                 )
             if (self.ser.isOpen()):
                 self.print_message("COM port open success\n")
-                return 0
+                return 0  ## OK
             print("COM port open failed\n")
             
         except serial.serialutil.SerialException:
@@ -219,23 +225,19 @@ class TCA08_device:
             self.print_message("request(): WARNING!!! Device run in simulation mode!!!\n")
             return -1
 
-        #f = open(self.logfilename, 'a') 
         self.buff = ""
 
         if command == '$TCA:STREAM 0':
             command += ' ' + str(start) + ' ' + str(stop)
         command += '\r\n'
-        #print(command)
-        #f.write(str(command[:-1]))
 
         ## write command to COM port
         try:
             self.ser.write(command.encode())
         except:
             text = '\nrequest(): Error in writing to COM port!\n Check: COM port is open?'
-            print(text)
-            #f.write(text + '\n')
-            #f.close()
+            #print(text)
+            self.print_message(text)
             return -1
 
         ## read answer from buffer
@@ -247,17 +249,15 @@ class TCA08_device:
                 if (line):
                     self.buff += line #.decode()
                     #print("{{"+line+"}}")
-                    #f.write("{{"+str(line)+"}}\n")
                     line = 0
             #self.buff = self.buff.decode()
             if len(self.buff) == 0:
                 text = 'Warning!! No answer to request for command' + command[:-2]
-                print(text)
-                #f.write(text + '\n')
-            print('request(): buff =>', self.buff, "<=", sep='')
-            #f.write('request(): buff =>' + self.buff + "<=")
-        #f.write("\n")
-        #f.close()
+                self.print_message(text)
+                #print(text)
+            text = 'request(): buff =>' + self.buff + "<="
+            #print(text)
+            #self.print_message(text)
         return 0
 
 
@@ -288,7 +288,7 @@ class TCA08_device:
         while "Wait" in s:
             k = s.index("Wait")
             s[k] = s[k] + ' ' + s[k+1]
-            s.pop(k+1)  ## удалить столбцы со временем, датой и AM/PM
+            s.pop(k+1)  ## удалить столбцы со вторым словом статуса
         return ','.join(s)
 
 
@@ -296,7 +296,6 @@ class TCA08_device:
     ##  Get info from device
     ## ----------------------------------------------------------------
     def get_info(self):
-        #flog = open(self.logfilename, 'a') 
         if self.develop == False:
             self.request('$TCA:INFO', 0, 0)
         else:
@@ -308,21 +307,23 @@ class TCA08_device:
                         + b'Software version: 1.3.2.0\r\n'
                         + b'Current date and time: 5/19/2022 1:28:13 PM\r\n'
                         ).decode()
-        #print(type(self.buff))
+
         self.info = self.buff
         text = "-------------------\nINFO:\n" + self.info
         print(text, sep='')
-        #flog.write(text + '\n')
-        #flog.close()
+
         if 'ix' in os.name:
             self.buff = self.buff.split("\n")   ## for Linux
         else:
             self.buff = self.buff.split("\r\n") ## for Windows
+
         for line in self.buff[::]:
             if "Serial Number" in line:
                 self.device_name = line.split()[-1]
-                text = "Device name =>" + self.device_name + "<="
-                self.print_message(text)
+
+        text = "Device name =>" + self.device_name + "<="
+        self.print_message(text)
+        print("===============================")
 
 
     ## ----------------------------------------------------------------
@@ -385,6 +386,7 @@ class TCA08_device:
             fdat.write(dataline)
             fdat.flush()
             fdat.close()
+        print("===============================")
     
 
     ## ----------------------------------------------------------------
@@ -392,37 +394,46 @@ class TCA08_device:
     ## ----------------------------------------------------------------
     def get_data(self):
         ##  read data from COM port
-        #flog = open(self.logfilename, 'a') 
         if self.develop == False:
             self.request('$TCA:LAST DATA')
         else:
             self.buff = (b'4472971 5/19/2022 1:40:53 PM 20 60 1 2 1 0 0 0 1 Wait Sample 1432 S 1433 N n n n 16.6836 630 630 257 0 0 203 0 0 0 0 C C O O 43 27 0 0 0 0 0 0 0 0 0 0 0 0 29 29 31 0 0 40 40 51.394 99.1449 419.198 0.08593589 7.37411 0.05046773 2.43565 12.26107 12 2201 60\r\n').decode()
             #self.buff = '1602383,2018-11-16 23:59:59.073,11,20,1,2,1,4,0,0,1,Standby,866,Standby,867,N,n,n,n,16.6347,0,635,255,0,0,203,0,0,0,0,C,C,O,O,100,31,0,0,0,0,0,0,0,0,0,0,0,0,34,33,34,60,0,40,40,51.4907,99.3099,842.182,0.1488839,11.8919,0.07915366,9.36399,11.90369'
+            #self.buff = "30562740,2023-03-17 21:15:53,24,0,0,0,0,0,0,0,0,Standby,8647,Standby,8646,N,n,n,n,0,0,220,0,0,0,204,0,0,0,0,C,C,O,O,31,33,0,0,0,0,0,0,0,0,0,0,0,0,28,28,30,0,0,40,40,51.4006,100.806,891.89,0.1440741,3.6613,0.02941906,-6.8021,12.28289,5,2922,59"
         text = "-------------------\nDATA:\n" + self.buff
         print(text, sep='')
-        #flog.write(text + '\n')
-        #flog.close()
+        
+        if len(self.buff):
+            ## reformat data to csv string
+            self.buff = self.join_datetime_in_string(self.buff)
+            #print(self.buff)
+            self.buff = self.join_status_in_string(self.buff)
+            #print(self.buff)
 
-        ## reformat data to csv string
-        self.buff = self.join_datetime_in_string(self.buff)
-        self.buff = self.join_status_in_string(self.buff)
-
-        ## write to datafile
+        ### === write to datafile
         ## Data file header
-        head = "ID TimeStamp SetupID Timebase G0_Status G1_Status G2_Status G3_Status G4_Status G5_Status G6_Status Ch1_Status Ch1_SampleID Ch2_Status Ch2_SampleID MainBoardStatus Ch1BoardStatus Ch2BoardStatus SensorBoardStatus FlowS setFlowS FlowS_RAW SamplePumpSpeed FlowA setFlowA FlowA_RAW AnalyticPumpSpeed Solenoid1 Solenoid2 Solenoid5 BallValve1 BallValve2 BallValve3 BallValve4 Ch1_Temp Ch2_Temp Ch1_Voltage1 setCh1Voltage1 Ch1_Current1 Ch1_Voltage2 setCh1Voltage2 Ch1_Current2 Ch2_Voltage1 setCh2Voltage1 Ch2_Current1 Ch2_Voltage2 setCh2Voltage2 Ch2_Current2 Ch1_SafetyTemp Ch2_SafetyTemp SafetyTempInt Fan1 Fan2 Fan3 Fan4 LicorTemp LicorPressure LicorCO2 LicorCO2abs LicorH2O LicorH2Oabs LicorH2Odewpoint LicorVoltage"
+        head = "ID TimeStamp SetupID Timebase G0_Status G1_Status G2_Status G3_Status G4_Status G5_Status G6_Status Ch1_Status Ch1_SampleID Ch2_Status Ch2_SampleID MainBoardStatus Ch1BoardStatus Ch2BoardStatus SensorBoardStatus FlowS setFlowS FlowS_RAW SamplePumpSpeed FlowA setFlowA FlowA_RAW AnalyticPumpSpeed Solenoid1 Solenoid2 Solenoid5 BallValve1 BallValve2 BallValve3 BallValve4 Ch1_Temp Ch2_Temp Ch1_Voltage1 setCh1Voltage1 Ch1_Current1 Ch1_Voltage2 setCh1Voltage2 Ch1_Current2 Ch2_Voltage1 setCh2Voltage1 Ch2_Current1 Ch2_Voltage2 setCh2Voltage2 Ch2_Current2 Ch1_SafetyTemp Ch2_SafetyTemp SafetyTempInt Fan1 Fan2 Fan3 Fan4 LicorTemp LicorPressure LicorCO2 LicorCO2abs LicorH2O LicorH2Oabs LicorH2Odewpoint LicorVoltage CPU RAM CPU_TEMP"
+        head = ",".join(head.split())
 
-        #print("buff:", len(self.buff.split(',')), "head:", len(head.split()))
+        ## filename
         typename = 'Data'
         filename = self.pathfile + self.sep + typename + self.sep
         filename += self.timestamp + "_" + typename + '.csv'
         newfile = True if not os.path.exists(filename) else False
+        ## write to file
         fdat = open(filename, 'a')
         if newfile:
-            fdat.write(",".join(head.split()) + "\n")
+            fdat.write(head + "\n")
         #f.write(",".join(self.buff.split()) + '\n')
         fdat.write(self.buff + '\n')
         fdat.flush()
         fdat.close()
+        
+        ## check errors and write errors and warnings to bot
+        errors = parse_data_errors(self.buff, head, self.device_name)
+        ## write errors to logfile
+        self.print_message(errors)
+        print("===============================")
 
 
     ## ----------------------------------------------------------------
@@ -467,6 +478,7 @@ class TCA08_device:
         fdat.write(self.buff + '\n')
         fdat.flush()
         fdat.close()
+        print("===============================")
 
 
 
@@ -474,7 +486,6 @@ class TCA08_device:
     ##  Get OFFLINERESULT with '$TCA:LAST OFFLINERESULT' command
     ## ----------------------------------------------------------------
     def get_offline_result(self):
-        #flog = open(self.logfilename, 'a') 
         if self.develop == False:
             self.request('$TCA:LAST OFFLINERESULT')
         else:
@@ -485,29 +496,27 @@ class TCA08_device:
 
         text = "-------------------\nOFFLINERESULT:\n" + self.buff
         print(text, sep='')
-        #flog.write(text + '\n')
-        #flog.close()
 
-        ## write to datafileз
+        ## write to datafile
         ## Data file header
         head = "ID SampleID SampleName StartTimeUTC StartTimeLocal TCcounts TCmass TCconc PunchArea DryingTime Chamber SetupID a1 b1 c1 d1 e1 f1 a2 b2 c2 d2 e2 f2"
 
-        print("buff len:", len(self.buff.split(',')), "head len:", len(head.split()))
+        #print("buff len:", len(self.buff.split(',')), "head len:", len(head.split()))
         typename = 'OffLineData'
         filename = self.pathfile + self.sep + typename + self.sep
-        #filename += 'OffLineData.csv'
         filename += self.timestamp + "_" + typename + '.csv'
-        #print("filename: ", filename)
-        if not os.path.exists(filename):
-            fdat = open(filename, 'a')
+
+        newfile = True if not os.path.exists(filename) else False
+        fdat = open(filename, 'a')
+        if newfile:
             fdat.write(",".join(head.split()) + "\n")
-        else:
-            fdat = open(filename, 'a')
+
         #f.write(",".join(self.buff.split()) + '\n')
         fdat.write(self.buff + '\n')
         fdat.flush()
         fdat.close()
         #print("end of get_offline_result()")
+        print("===============================")
 
 
 
@@ -532,11 +541,50 @@ class TCA08_device:
         ## Data file header
         head = "ID TimeStamp SerialNumber SetFlowS SetFlowA Area FlowFormulaA FlowFormulaB FlowFormulaC FlowFormulaD FlowFormulaE FlowFormulaF CCch1 CCch2 SlopeTempCh1 InterceptTempCh1 SlopeTempCh2 InterceptTempCh2 SampleTime C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 P11 P12 P13 P21 P22 P23 A0 A2 A3 FlowRepStd Temp Pressure SoftwareVersion FirmwareVersion AE33_b TimeZone DST TimeProtocol BHparamID FilterIntegrity_threshold"
 
-        print("buff:", len(self.buff.split(',')), "head:", len(head.split()))
+        #print("buff:", len(self.buff.split(',')), "head:", len(head.split()))
         typename =  'Setup'
         filename = self.pathfile + self.sep + typename + self.sep
         filename += self.timestamp + "_" + typename + '.csv'
         #filename += 'Setup.csv'
+
+        newfile = True if not os.path.exists(filename) else False
+        fdat = open(filename, 'a')
+        if newfile:
+            fdat.write(",".join(head.split()) + "\n")
+
+        #.write(",".join(self.buff.split()) + '\n')
+        fdat.write(self.buff.strip() + '\n')
+        fdat.flush()
+        fdat.close()
+        print("===============================")
+
+
+    ## ----------------------------------------------------------------
+    ##  Get LOG with '$TCA:LAST LOG' command
+    ## ----------------------------------------------------------------
+    def get_log(self):
+        #flog = open(self.logfilename, 'a') 
+        if self.develop == False:
+            self.request('$TCA:LAST LOG')
+        else:
+            ## from COM port
+            self.buff = (b'\r\n').decode()
+            ## from docs
+            self.buff = '283891 5/14/2023 3:24:50 PM 1 1 Command Set Fan 1 set to 0%.'
+        text = "-------------------\nLOG:\n" + self.buff
+        print(text, sep='')
+        #flog.write(text + '\n')
+        #flog.close()
+
+        ## write to datafile
+        ## Data file header
+        head = "ID TimeStamp SerialNumber SetFlowS SetFlowA Area FlowFormulaA FlowFormulaB FlowFormulaC FlowFormulaD FlowFormulaE FlowFormulaF CCch1 CCch2 SlopeTempCh1 InterceptTempCh1 SlopeTempCh2 InterceptTempCh2 SampleTime C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 P11 P12 P13 P21 P22 P23 A0 A2 A3 FlowRepStd Temp Pressure SoftwareVersion FirmwareVersion AE33_b TimeZone DST TimeProtocol BHparamID FilterIntegrity_threshold"
+
+        #print("buff:", len(self.buff.split(',')), "head:", len(head.split()))
+        typename =  'Logs'
+        filename = self.pathfile + self.sep + typename + self.sep
+        filename += self.timestamp + "_" + typename + '.csv'
+        #filename += 'Log.csv'
         if not os.path.exists(filename):
             fdat = open(filename, 'a')
             fdat.write(",".join(head.split()) + "\n")
@@ -546,6 +594,7 @@ class TCA08_device:
         fdat.write(self.buff + '\n')
         fdat.flush()
         fdat.close()
+        print("===============================")
 
 
 
@@ -559,88 +608,6 @@ class TCA08_device:
 
 
 
-##    def request(self, command, start, stop):
-##        if command == 'FETCH DATA':
-##            command += ' ' + str(start) + ' ' + str(stop)
-##        command += '\r\n'
-##        print(command)
-##
-##        ## --- send command ---
-##        time.sleep(1)
-##        ##self.sock.send(bytes(command))
-##        bytes = self.sock.send(command.encode())
-##        print(bytes)
-##        ## \todo проверить, что все отправилось
-##        if bytes != len(command):
-##            print("request: Error in sending data!! ") 
-##        print('sent ', bytes, ' to socket')
-##
-##        if "CLOSE" in command:
-##            return 1
-##
-##        ## --- read data ---
-##        time.sleep(1)
-##        attempts = 0
-##        buf = self.sock.recv(2000000)
-##        print('qq,  buf(bytes)=',len(buf))
-##        #print(buf)
-##
-##        buff2 = buf.decode("UTF-8")
-##        buff2 = buff2.split("\r\nTCA>")
-##        #print('qq,  buff2=',len(buff2),buff2)
-##
-##        #self.buff = buf.decode("UTF-8")
-##        if "HELLO" in command:
-##            self.buff = buff2[1]
-##        else:
-##            self.buff = buff2[0]
-##
-##        #print('qq,  self.buff=',len(self.buff))
-##        #print(self.buff)
-##        #self.buff = self.buff.split("TCA>")
-##        #print(self.buff)
-##
-##        while(len(buf) == 0 and attempts < 10):
-##            print('not data,  buf=',len(buf))
-##            time.sleep(1)
-##            buf = self.sock.recv(2000000)
-##            print('qq,  buf(bytes)=',len(buf))
-##            #print(buf)
-##            buff2 = buf.decode("UTF-8")
-##            buff2 = buff2.split("\r\nTCA>")
-##            #self.buff = buf.decode("UTF-8")
-##            if "HELLO" in command:
-##                self.buff = buff2[1]
-##            else:
-##                self.buff = buff2[0]
-##            #self.buff = self.buff.split("TCA>")
-##            #print(self.buff)
-##            attempts += 1
-##        if attempts >= 10:
-##            print("request: Error in receive")
-##            self.sock.unconnect()
-##            return 2
-##        
-##        if "MAXID" in command:
-##            #self.buff = self.buff.split("TCA>")
-##            #print(self.buff)
-##            self.MAXID = int(self.buff)
-##            print(self.MAXID)
-##        if "MINID" in command:
-##            #self.buff = self.buff.split("TCA>")
-##            #print(self.buff)
-##            self.MINID = int(self.buff)
-##            print(self.MINID)
-##        if '?' in command:
-##            self.info = self.buff
-##        if "FETCH" in command:
-##            self.parse_raw_data()
-##        if "TCA" in command:
-##            if "TCA:D":
-##                self.parse_format_D_data()            
-##            if "TCA:W":
-##                self.parse_format_W_data()            
-##        return 0
 
 
     def parse_raw_data(self):

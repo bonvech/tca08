@@ -178,10 +178,11 @@ if __name__ == "__main__":
     ## check path to figures
     if not os.path.exists(path_to_figures):   
         os.system("mkdir " + path_to_figures)
-    
 
+
+    ## ========================
     ## read OnlineData
-    filetype = 'OnLineResult'
+    filetype = 'OnlineResult'
     dirname = datadirname + filetype + sep
     csvfilename = dirname + timestamp + "_" + filetype + ".csv"   #-22_13-52.csv"
 
@@ -197,9 +198,8 @@ if __name__ == "__main__":
 
     ## plot OnlineData day
     plot_tca_online(datum)
-    plt.savefig(path_to_figures + 'tca_' + filetype.lower() + '_day.svg', facecolor='white', bbox_inches='tight')
+    plt.savefig(path_to_figures + 'tca_' + filetype.lower() + '_day.svg', facecolor='white', bbox_inches='tight') 
     plt.savefig(path_to_figures + 'tca_' + filetype.lower() + '_day.png', facecolor='white', bbox_inches='tight') 
-
     print("Online 2day done")
 
     ## plot OnlineData week
@@ -209,6 +209,7 @@ if __name__ == "__main__":
     print("Online twoweeks done")
 
 
+    ## ========================
     ## read ExtDeviceData datafile
     filetype = 'ExtDeviceData'
     dirname = datadirname + filetype + sep
