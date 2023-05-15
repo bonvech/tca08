@@ -409,6 +409,11 @@ class TCA08_device:
             #print(self.buff)
             self.buff = self.join_status_in_string(self.buff)
             #print(self.buff)
+        else:
+            text = f"Error! {self.device_name} writes empty line to data file"
+            bot = telebot.TeleBot(config.token, parse_mode=None)
+            bot.send_message(config.channel, text)
+            self.print_message(text, '\n')
 
         ### === write to datafile
         ## Data file header
@@ -420,11 +425,11 @@ class TCA08_device:
         filename = self.pathfile + self.sep + typename + self.sep
         filename += self.timestamp + "_" + typename + '.csv'
         newfile = True if not os.path.exists(filename) else False
+        
         ## write to file
         fdat = open(filename, 'a')
         if newfile:
             fdat.write(head + "\n")
-        #f.write(",".join(self.buff.split()) + '\n')
         fdat.write(self.buff + '\n')
         fdat.flush()
         fdat.close()
@@ -470,11 +475,12 @@ class TCA08_device:
         typename = 'OnLineResult'
         filename = self.pathfile + self.sep + typename + self.sep
         filename += self.timestamp + "_" + typename + '.csv'
+
         newfile = True if not os.path.exists(filename) else False
         fdat = open(filename, 'a')
         if newfile:
             fdat.write(",".join(head.split()) + "\n")
-        #f.write(",".join(self.buff.split()) + '\n')
+
         fdat.write(self.buff + '\n')
         fdat.flush()
         fdat.close()
@@ -500,8 +506,6 @@ class TCA08_device:
         ## write to datafile
         ## Data file header
         head = "ID SampleID SampleName StartTimeUTC StartTimeLocal TCcounts TCmass TCconc PunchArea DryingTime Chamber SetupID a1 b1 c1 d1 e1 f1 a2 b2 c2 d2 e2 f2"
-
-        #print("buff len:", len(self.buff.split(',')), "head len:", len(head.split()))
         typename = 'OffLineData'
         filename = self.pathfile + self.sep + typename + self.sep
         filename += self.timestamp + "_" + typename + '.csv'
@@ -510,12 +514,10 @@ class TCA08_device:
         fdat = open(filename, 'a')
         if newfile:
             fdat.write(",".join(head.split()) + "\n")
-
-        #f.write(",".join(self.buff.split()) + '\n')
-        fdat.write(self.buff + '\n')
+        if len(self.buff):
+            fdat.write(self.buff + '\n')
         fdat.flush()
         fdat.close()
-        #print("end of get_offline_result()")
         print("===============================")
 
 
@@ -524,7 +526,6 @@ class TCA08_device:
     ##  Get SETUP with '$TCA:LAST SETUP' command
     ## ----------------------------------------------------------------
     def get_setup(self):
-        #flog = open(self.logfilename, 'a') 
         if self.develop == False:
             self.request('$TCA:LAST SETUP')
         else:
@@ -534,8 +535,6 @@ class TCA08_device:
             self.buff = '1,2017-09-26 14:19:05,TCA-08-S00-00000,16.7,0.5,4.91,7.31204978640517e-5,-0.0357400687309517,10.0655216405797,9.76321196119687e-7,-4.46034050051914e-6,0.0185413211101763,11.45,11.45,1,0,1,0,60,300,3,12,57,3,495,3,12,57,3,180,265,265,220,265,265,220,100,50,100,1,25,101.325,0.1.0.0,301,1,UTC,1,0,0,0.45, string from docs'
         text = "-------------------\nSETUP:\n" + self.buff
         print(text, sep='')
-        #flog.write(text + '\n')
-        #flog.close()
 
         ## write to datafile
         ## Data file header
@@ -545,14 +544,12 @@ class TCA08_device:
         typename =  'Setup'
         filename = self.pathfile + self.sep + typename + self.sep
         filename += self.timestamp + "_" + typename + '.csv'
-        #filename += 'Setup.csv'
 
         newfile = True if not os.path.exists(filename) else False
         fdat = open(filename, 'a')
         if newfile:
             fdat.write(",".join(head.split()) + "\n")
 
-        #.write(",".join(self.buff.split()) + '\n')
         fdat.write(self.buff.strip() + '\n')
         fdat.flush()
         fdat.close()
@@ -563,7 +560,6 @@ class TCA08_device:
     ##  Get LOG with '$TCA:LAST LOG' command
     ## ----------------------------------------------------------------
     def get_log(self):
-        #flog = open(self.logfilename, 'a') 
         if self.develop == False:
             self.request('$TCA:LAST LOG')
         else:
@@ -573,8 +569,6 @@ class TCA08_device:
             self.buff = '283891 5/14/2023 3:24:50 PM 1 1 Command Set Fan 1 set to 0%.'
         text = "-------------------\nLOG:\n" + self.buff
         print(text, sep='')
-        #flog.write(text + '\n')
-        #flog.close()
 
         ## write to datafile
         ## Data file header
@@ -584,13 +578,12 @@ class TCA08_device:
         typename =  'Logs'
         filename = self.pathfile + self.sep + typename + self.sep
         filename += self.timestamp + "_" + typename + '.csv'
-        #filename += 'Log.csv'
-        if not os.path.exists(filename):
-            fdat = open(filename, 'a')
+
+        newfile = True if not os.path.exists(filename) else False
+        fdat = open(filename, 'a')
+        if newfile:
             fdat.write(",".join(head.split()) + "\n")
-        else:
-            fdat = open(filename, 'a')
-        #.write(",".join(self.buff.split()) + '\n')
+        
         fdat.write(self.buff + '\n')
         fdat.flush()
         fdat.close()
