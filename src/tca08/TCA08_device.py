@@ -198,8 +198,11 @@ class TCA08_device:
                                  # but may be overridden in exception subclasses
         
         text = f"TCA08 port error: cannot connect to {self.portName} port from {self.compname}"
-        bot = telebot.TeleBot(config.token, parse_mode=None)
-        bot.send_message(config.channel, text)
+        try:
+            bot = telebot.TeleBot(config.token, parse_mode=None)
+            bot.send_message(config.channel, text)
+        except:
+            self.print_message("Cannnot send message to bot", '\n')
         ## write to log file
         message = str(datetime.now()) + ' ' + text
         self.print_message(message, '\n')
@@ -411,8 +414,11 @@ class TCA08_device:
             #print(self.buff)
         else:
             text = f"Error! {self.device_name} writes empty line to data file"
-            bot = telebot.TeleBot(config.token, parse_mode=None)
-            bot.send_message(config.channel, text)
+            try:
+                bot = telebot.TeleBot(config.token, parse_mode=None)
+                bot.send_message(config.channel, text)
+            except:
+                self.print_message("Cannnot send message to bot", '\n')
             self.print_message(text, '\n')
 
         ### === write to datafile
