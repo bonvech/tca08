@@ -47,7 +47,6 @@ def plot_tca_online(data, period='day'):
     p1color = 'yellowgreen'  #'green'
     p2color = 'dimgray'
     title = 'TCA08'
-    fmt = get_time_format()
 
     fig = plt.figure(figsize=(10, 5))
     ax_2 = fig.add_subplot(1, 1, 1)
@@ -63,13 +62,21 @@ def plot_tca_online(data, period='day'):
     z = data[param2].replace(0, np.nan)
     ax_2.plot(x, z, p2color, label=param2)
     ax_2.fill_between(x, z, np.zeros_like(z), color=p2color)
+    
     ## format graph
-    ax_2.xaxis.set_major_formatter(fmt)
     ax_2.set_xlim(xlims)
     ax_2.set_ylim(bottom=0)
     ax_2.set_title(title, loc='right')
     ax_2.legend()
-    ax_2.grid()
+
+    fmt = get_time_format()
+    locator = dates.AutoDateLocator(minticks=20, maxticks=30)
+
+    ax_2.xaxis.set_major_formatter(fmt)
+    ax_2.xaxis.set_minor_locator(locator)
+    ax_2.grid(which='major', alpha=0.9)
+    ax_2.grid(which='minor', alpha=0.5, linestyle='--')
+
 
 
 ############################################################################
@@ -123,8 +130,6 @@ def plot_tca_pressure_and_temp(ext18, period='day'):
     data = data[pd.to_datetime(data['TimeStamp'], format=fmt1) > xmin]
     x = x[x>xmin]
 
-    fmt = get_time_format()
-
     fig = plt.figure(figsize=(10, 5))
     ax_2 = fig.add_subplot(1, 1, 1)
 
@@ -155,11 +160,18 @@ def plot_tca_pressure_and_temp(ext18, period='day'):
 
     ## # format graph
     plt.rcParams['xtick.labelsize'] = 10
-    ax_2.xaxis.set_major_formatter(fmt)
     ax_2.set_xlim(xlims)
     ax_2.set_ylim(min(y) - 0.2 * (max(y) - min(y)))  ## отступить снизу 20% диапазона
     ax_2.set_title('TCA08', loc='right')
-    ax_2.grid()
+    
+    fmt = get_time_format()
+    locator = dates.AutoDateLocator(minticks=20, maxticks=30)
+
+    ax_2.xaxis.set_major_formatter(fmt)
+    ax_2.xaxis.set_minor_locator(locator)
+    ax_2.grid(which='major', alpha=0.9)
+    ax_2.grid(which='minor', alpha=0.5, linestyle='--')
+
     
 
 ### ------------------------------------------------------------------------
