@@ -2,11 +2,13 @@ import sys
 import socket
 import time
 import datetime
-from datetime import datetime
+from datetime import datetime, date
 from datetime import timedelta
-#import pandas as pd
+import pandas as pd
+import xlsxwriter
 import os
 import serial
+
 # for bot
 import telebot
 import config
@@ -481,6 +483,7 @@ class TCA08_device:
         typename = 'OnLineResult'
         filename = self.pathfile + self.sep + typename + self.sep
         filename += self.timestamp + "_" + typename + '.csv'
+        print(filename)
 
         newfile = True if not os.path.exists(filename) else False
         fdat = open(filename, 'a')
@@ -490,7 +493,53 @@ class TCA08_device:
         fdat.write(self.buff + '\n')
         fdat.flush()
         fdat.close()
-        print("===============================")
+        print("===============================") 
+
+        ## open onlinersult file ans save it as xls
+        self.save_csv_as_xls(filename)
+    
+    
+    ## ----------------------------------------------------------------
+    ##  file ans save it as xls
+    ## ----------------------------------------------------------------
+    def save_csv_as_xls(self, filename): 
+        filenamexls = filename[:-3] + "xlsx"
+        data = pd.read_csv(filename).drop_duplicates()
+        
+        ## reformat data columns to datetime and float format
+        #data = data.apply(lambda col: 
+        data.iloc[:, 2:] = data.iloc[:, 2:].apply(lambda col: 
+            col.apply(pd.to_datetime) if 'time' in col.name.lower() else col.astype(float))
+            #col.astype(float) if col.str.replace('.','').str.isdigit().all() else col)
+        #print(data.info())
+        
+   
+        # Create a Pandas Excel writer using XlsxWriter as the engine.
+        # Also set the default datetime and date formats.
+        sheetname = self.timestamp
+        with pd.ExcelWriter(
+            filenamexls,
+            engine='xlsxwriter',
+            datetime_format="DD.MM.YYYY HH:MM",
+            date_format="dd.mm.yyyy",
+        ) as writer:
+        
+            data.style \
+                .format(precision=3)\
+                .to_excel(writer, 
+                          sheet_name=sheetname, 
+                          index=False,
+                          float_format="%.2f", 
+                          freeze_panes=(1,0)
+                          )
+        
+            # Get the xlsxwriter workbook and worksheet objects in order
+            # to set the column widths and make the dates clearer.
+            workbook  = writer.book
+            worksheet = writer.sheets[sheetname]
+
+            # Set the column widths, to make the dates clearer.
+            worksheet.set_column(2, 5, 20)
 
 
 

@@ -1,3 +1,5 @@
 pyserial
 pyTelegramBotAPI
-
+openpyxl==3.1.2
+xlsxwriter==3.1.9
+Jinja2
