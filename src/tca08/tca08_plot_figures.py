@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 from   matplotlib import dates
 #import datetime
 from datetime import datetime
-
 import os
 
 
@@ -19,6 +18,18 @@ def get_time_format():
     except:
         fmt = dates.DateFormatter('%d/%m/%Y\n %H:%M')
     return fmt
+
+
+############################################################################
+##  Get folder separator sign
+############################################################################
+def get_folder_separator():
+
+    if 'ix' in os.name:
+        sep = '/'  ## -- path separator for LINIX
+    else:
+        sep = '\\' ## -- path separator for Windows
+    return sep
 
 
 ############################################################################
@@ -176,15 +187,13 @@ def plot_tca_pressure_and_temp(ext18, period='day'):
 
 ### ------------------------------------------------------------------------
 if __name__ == "__main__":
-    if 'ix' in os.name:
-        sep = '/'  ## -- path separator for LINIX
-    else:
-        sep = '\\' ## -- path separator for Windows
+    sep = get_folder_separator()
+    
     ## files to read
     #timestamp = '2022-08'
     timestamp = str(datetime.now())[:7]
     print("timestamp:", timestamp)
-    datadirname = ".." + sep + ".." + sep + "data" + sep
+    datadirname     = ".." + sep + ".." + sep + "data"    + sep
     path_to_figures = ".." + sep + ".." + sep + "figures" + sep
     print(datadirname, path_to_figures, sep='\n')
     ## check path to figures
