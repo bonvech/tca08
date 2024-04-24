@@ -1,17 +1,17 @@
-import sys
-import socket
-import time
 import datetime
 from datetime import datetime, date
 from datetime import timedelta
-import pandas as pd
-import xlsxwriter
 import os
+import pandas as pd
 import serial
+import socket
+import sys
+import time
+import xlsxwriter
 
 # for bot
 import telebot
-import config
+import telebot_config
 
 try:
     from tca08_error_parser import *
@@ -20,6 +20,18 @@ except:
     exit()
 
 
+## ----------------------------------------------------------------
+##  
+## ----------------------------------------------------------------
+def get_local_ip():
+    hostname = socket.gethostname()
+    local_ip = socket.gethostbyname(hostname)
+    return hostname, local_ip
+
+
+## ----------------------------------------------------------------
+##  
+## ----------------------------------------------------------------
 class TCA08_device:
     def __init__(self):
         self.develop = False ## flag True for develop stage
@@ -36,15 +48,6 @@ class TCA08_device:
         self.STOPBITS = serial.STOPBITS_ONE
         self.BYTESIZE = serial.EIGHTBITS
         self.TIMEX = 1
-
-        ## for data files
-        #self.yy = '0'        ##  year for filename of raw file
-        #self.mm = '0'        ## month for filename of raw file
-        #self.yy_D = '0'      ##  year for filename of D-file
-        #self.mm_D = '0'      ## month for filename of D-file 
-        #self.xlsfilename = ''      ## exl file name
-        #self.file_raw = None       ## file for raw data
-        #self.file_format_D = None  ## file for raw data
 
         self.buff = ''
         self.info = ''
@@ -71,9 +74,34 @@ class TCA08_device:
     ## ----------------------------------------------------------------
     def print_message(self, message, end=''):
         print(message)
-        flog = open(self.logfilename, 'a')
-        flog.write(message + end)
-        flog.close()
+
+        #self.logfilename = self.logdirname + "_".join(["_".join(str(datetime.now()).split('-')[:2]), self.device_name.split()[0],  'log.txt'])
+        with open(self.logfilename, 'a') as flog:
+            flog.write(str(datetime.now()) + ':  ')
+            flog.write(message + end)
+
+
+    ## ----------------------------------------------------------------
+    ##  write message to bot
+    ## ----------------------------------------------------------------
+    def write_to_bot(self, text):
+        try:
+            hostname, local_ip = get_local_ip()
+            text = f"{hostname} ({local_ip}): {text}"
+            
+            bot = telebot.TeleBot(telebot_config.token, parse_mode=None)
+            #bot.send_message(telebot_config.channel, text)
+            nmax = 4096 ## максимальная длина сообщения в телеграме
+            for n in range((len(text) + nmax - 1)// nmax):
+                bot.send_message(telebot_config.channel, text[nmax*n: nmax * (n+1)])
+
+        except Exception as err:
+            ##  напечатать строку ошибки
+            text = f": ERROR in writing to bot: {err}"
+            self.print_message(text)  ## write to log file
+
+
+        
 
 
     ## ----------------------------------------------------------------
@@ -199,14 +227,11 @@ class TCA08_device:
             print("Exception args:", inst)          # __str__ allows args to be printed directly,
                                  # but may be overridden in exception subclasses
         
+        ## write to bot & log file
         text = f"TCA08 port error: cannot connect to {self.portName} port from {self.compname}"
-        try:
-            bot = telebot.TeleBot(config.token, parse_mode=None)
-            bot.send_message(config.channel, text)
-        except:
-            self.print_message("Cannnot send message to bot", '\n')
-        ## write to log file
-        message = str(datetime.now()) + ' ' + text
+        self.write_to_bot(text)
+        
+        message = f"{datetime.now()}  {text}"
         self.print_message(message, '\n')
         
         return -1
@@ -416,11 +441,7 @@ class TCA08_device:
             #print(self.buff)
         else:
             text = f"Error! {self.device_name} writes empty line to data file"
-            try:
-                bot = telebot.TeleBot(config.token, parse_mode=None)
-                bot.send_message(config.channel, text)
-            except:
-                self.print_message("Cannnot send message to bot", '\n')
+            self.write_to_bot(text)
             self.print_message(text, '\n')
 
         ### === write to datafile
@@ -444,6 +465,8 @@ class TCA08_device:
         
         ## check errors and write errors and warnings to bot
         errors = parse_data_errors(self.buff, head, self.device_name)
+        if errors:
+            self.write_to_bot(errors)
         ## write errors to logfile
         self.print_message(errors)
         print("===============================")
@@ -717,7 +740,7 @@ class TCA08_device:
             if mm != lastmm or yy != lastyy:
                 ##### ddat file 
                 filename = '_'.join((yy, mm)) + '_TCA-S08-01006.wdat'
-                filename = self.pathfile +'\wdat\\' + filename
+                filename = self.pathfile +'\\wdat\\' + filename
                 print(filename,mm,yy,lastmm,lastyy)
                 try:
                     ## ddat file exists

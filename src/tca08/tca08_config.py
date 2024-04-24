@@ -1,12 +1,12 @@
 #
 # Directorry for DATA:
 #
-path = "..\..\data"
+path = "..\\..\\data"
 #
 #
 # TCA08:   Serial Port:
 #
-COM="COM8"
+COM="COM2"
 #
 #
 # TCA08:  Last Records:

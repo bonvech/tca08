@@ -1,5 +1,5 @@
-from TCA08_device import TCA08_device
-import time
+from tca08_device import TCA08_device
+#import time
 
 device = TCA08_device()
 

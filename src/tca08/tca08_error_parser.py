@@ -1,5 +1,5 @@
-import telebot
-import config
+## Parse TCA errors according to TCA manual
+## 
 
 ## get errors from G3_Status or G4_Status
 def get_g34_errors(g3, g=3):
@@ -49,7 +49,7 @@ def parse_data_errors(buff, head, devicename):
     #print(head)
     #print(buff)
     data = {x: y for x, y in zip(head.split(','), buff.split(','))}
-    errors = ''
+    errors = ""
     #print(data)
     
     ##
@@ -105,7 +105,8 @@ def parse_data_errors(buff, head, devicename):
     g6 = int(data["G6_Status"])    
     if g6 > 0:
         if g6 & 1:
-            errors += "Message G6(1). Сеть обнаружена.\n"
+              ##  !!!!! is not an error?
+##            errors += "Message G6(1). Сеть обнаружена.\n"
         if g6 & 2:
             errors += "Error G6(2). База данных: Карта памяти CF отсутствует.\n" 
         if g6 & 4:
@@ -115,18 +116,8 @@ def parse_data_errors(buff, head, devicename):
         if g6 & 16:
             errors += "Warning G6(16). Память: Число рядов данных достигает предела внутренней памяти. Удалите более старые ряды данных, используя команды в меню памяти. Мы рекомендуем резервное копирование базы данных перед удалением рядов.\n"     
     
-    ## send errors to bot
-    nmax = 4096 ## максимальная длина сообщения в телеграме
     if len(errors):
-        #errors = "TCA-08-S02-00209 сообщает:\n" + errors
         errors = f"{devicename} сообщает:\n" + errors
-        
-        ## send to bot
-        bot = telebot.TeleBot(config.token, parse_mode=None)
-        for n in range((len(errors) + nmax)// nmax):
-            bot.send_message(config.channel, errors[nmax*n: nmax * (n+1)])
-    else:
-        errors = "No errors in data."
     
     return errors
 
