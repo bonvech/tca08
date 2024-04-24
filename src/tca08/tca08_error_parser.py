@@ -105,8 +105,9 @@ def parse_data_errors(buff, head, devicename):
     g6 = int(data["G6_Status"])    
     if g6 > 0:
         if g6 & 1:
-              ##  !!!!! is not an error?
+            ##  !!!!! is not an error?
 ##            errors += "Message G6(1). Сеть обнаружена.\n"
+            pass
         if g6 & 2:
             errors += "Error G6(2). База данных: Карта памяти CF отсутствует.\n" 
         if g6 & 4:

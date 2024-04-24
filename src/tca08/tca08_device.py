@@ -13,11 +13,12 @@ import xlsxwriter
 import telebot
 import telebot_config
 
-try:
-    from tca08_error_parser import *
-except:
-    print("\n!!!__init()__ Error!! No file \"tca08_error_parser.py\" to import!!!\n\n")
-    exit()
+#try:
+from tca08_error_parser import *
+#except:
+#    print("\n!!!__init()__ Error!! No file \"tca08_error_parser.py\" to import!!!\n\n")
+#    exit()
+
 
 
 ## ----------------------------------------------------------------
@@ -62,6 +63,8 @@ class TCA08_device:
         else:
             self.sep = '\\' ## -- path separator for Windows
             
+
+
         
         ## write to log file
         message = "\n============================================\n" + str(datetime.now()) + '  start'
