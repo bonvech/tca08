@@ -127,8 +127,10 @@ def parse_device_data(datum, devnum=None):
 def plot_tca_pressure_and_temp(ext18, period='day'):
     ## plot Temperature and Pressure
 
+    #print(ext18)
     data = ext18[::][['TimeStamp', 'p', 'T']]
-    fmt1 = '%Y-%m-%d %H:%M:%S'
+    fmt1 = '%Y-%m-%d %H:%M:%S.%f'
+    print(data[:2])
 
     x = pd.to_datetime(data['TimeStamp'].astype(str), format=fmt1)
     if period == 'day':

@@ -38,8 +38,8 @@ class TCA08_device:
         self.develop = False ## flag True for develop stage
         self.logfilename = "tca08_log.txt"
 
-        self.MINID = 0
-        self.MAXID = 0
+        #self.MINID = 0
+        #self.MAXID = 0
         self.pathfile = None  ## data directory name
 
         ##  COM port properties
@@ -76,12 +76,16 @@ class TCA08_device:
     ##  Print message to logfile
     ## ----------------------------------------------------------------
     def print_message(self, message, end=''):
+        if len(message) == 0:
+            return
+            
         print(message)
 
         #self.logfilename = self.logdirname + "_".join(["_".join(str(datetime.now()).split('-')[:2]), self.device_name.split()[0],  'log.txt'])
         with open(self.logfilename, 'a') as flog:
-            flog.write(str(datetime.now()) + ':  ')
-            flog.write(message + end)
+            #flog.write(str(datetime.now()) + ':  ')
+            #flog.write(message + end)
+            flog.write(f"{datetime.now()}: {message}{end}")
 
 
     ## ----------------------------------------------------------------
@@ -126,8 +130,8 @@ class TCA08_device:
             return -1
 
         self.portName = tcaconfig.COM
-        self.MINID = int(tcaconfig.MINID)
-        self.MAXID = self.MINID
+        #self.MINID = int(tcaconfig.MINID)
+        #self.MAXID = self.MINID
         self.pathfile = tcaconfig.path
         self.compname = tcaconfig.computer
 
@@ -181,7 +185,7 @@ class TCA08_device:
         f.write("COM = '" + self.portName + "'\n")
 
         f.write("#\n#\n# TCA08:  Last Records:\n#\n")
-        f.write("MINID = " + str(self.MINID) + "\n")
+        #f.write("MINID = " + str(self.MINID) + "\n")
         f.close()
 
 
@@ -196,7 +200,7 @@ class TCA08_device:
         #print("PARITY   = ", self.PARITY)
         #print("BYTESIZE = ", self.BYTESIZE)
         #print("TIMEX = ",    self.TIMEX)
-        print("MINID = ",    self.MINID)
+        #print("MINID = ",    self.MINID)
 
 
     ## ----------------------------------------------------------------
@@ -206,6 +210,8 @@ class TCA08_device:
         if self.develop == True:
             print("connect(): WARNING!!! Device run in simulation mode!!!\n")
             return
+            
+        ##  Open COM port
         try:
             self.ser = serial.Serial(
                 port =     self.portName,
@@ -217,12 +223,13 @@ class TCA08_device:
                 )
             if (self.ser.isOpen()):
                 self.print_message("COM port open success\n")
-                return 0  ## OK
-            print("COM port open failed\n")
-            
+   
+        ##  if COM port open failed            
         except serial.serialutil.SerialException:
             print("\n\nError in connect(): !!!!!!!! \nException type: serial.serialutil.SerialException")
             print("Problem with port", self.portName)
+            return -1
+
         except Exception as inst:
             print("\n\nError in connect(): !!!!!!!! except Exception: ")
             print("Exception type:", type(inst))    # the exception instance
@@ -230,15 +237,17 @@ class TCA08_device:
             print("Exception args:", inst)          # __str__ allows args to be printed directly,
                                  # but may be overridden in exception subclasses
         
-        ## write to bot & log file
-        text = f"TCA08 port error: cannot connect to {self.portName} port from {self.compname}"
-        self.write_to_bot(text)
-        
-        message = f"{datetime.now()}  {text}"
-        self.print_message(message, '\n')
-        
-        return -1
+            ## write errors to bot & log file
+            text = f"TCA08 port error: cannot connect to {self.portName} port from {self.compname}"
+            self.write_to_bot(text)
+            
+            message = f"{datetime.now()}  {text}"
+            self.print_message(message, '\n')
+            
+            return -1
 
+        return 0  ## OK
+ 
 
     ## ----------------------------------------------------------------
     ## Close COM port
@@ -285,9 +294,9 @@ class TCA08_device:
                     line = 0
             #self.buff = self.buff.decode()
             if len(self.buff) == 0:
-                text = 'Warning!! No answer to request for command' + command[:-2]
-                self.print_message(text)
-                #print(text)
+                text = f"Warning!! No answer to request for command {command[:-2]}"
+                self.print_message(text, '\n')
+                return -1
             text = 'request(): buff =>' + self.buff + "<="
             #print(text)
             #self.print_message(text)
@@ -340,7 +349,10 @@ class TCA08_device:
                         + b'Software version: 1.3.2.0\r\n'
                         + b'Current date and time: 5/19/2022 1:28:13 PM\r\n'
                         ).decode()
-
+        ## if no response
+        if not len(self.buff):
+            return
+        
         self.info = self.buff
         text = "-------------------\nINFO:\n" + self.info
         print(text, sep='')
@@ -355,7 +367,7 @@ class TCA08_device:
                 self.device_name = line.split()[-1]
 
         text = "Device name =>" + self.device_name + "<="
-        self.print_message(text)
+        self.print_message(text, '\n')
         print("===============================")
 
 
@@ -373,6 +385,10 @@ class TCA08_device:
                 self.buff = (b'4198813 4472972 18 14 52 989.2 4.4 0\r\n').decode()
         else:
             self.buff = 'dummy dummy data'
+
+        ## if no response
+        if not len(self.buff):
+            return
 
         text = "-------------------\nEXTDEVICEDATA:\n" + self.buff
         print(text, sep='')
@@ -433,6 +449,11 @@ class TCA08_device:
             self.buff = (b'4472971 5/19/2022 1:40:53 PM 20 60 1 2 1 0 0 0 1 Wait Sample 1432 S 1433 N n n n 16.6836 630 630 257 0 0 203 0 0 0 0 C C O O 43 27 0 0 0 0 0 0 0 0 0 0 0 0 29 29 31 0 0 40 40 51.394 99.1449 419.198 0.08593589 7.37411 0.05046773 2.43565 12.26107 12 2201 60\r\n').decode()
             #self.buff = '1602383,2018-11-16 23:59:59.073,11,20,1,2,1,4,0,0,1,Standby,866,Standby,867,N,n,n,n,16.6347,0,635,255,0,0,203,0,0,0,0,C,C,O,O,100,31,0,0,0,0,0,0,0,0,0,0,0,0,34,33,34,60,0,40,40,51.4907,99.3099,842.182,0.1488839,11.8919,0.07915366,9.36399,11.90369'
             #self.buff = "30562740,2023-03-17 21:15:53,24,0,0,0,0,0,0,0,0,Standby,8647,Standby,8646,N,n,n,n,0,0,220,0,0,0,204,0,0,0,0,C,C,O,O,31,33,0,0,0,0,0,0,0,0,0,0,0,0,28,28,30,0,0,40,40,51.4006,100.806,891.89,0.1440741,3.6613,0.02941906,-6.8021,12.28289,5,2922,59"
+
+        ## if no response
+        if not len(self.buff):
+            return
+
         text = "-------------------\nDATA:\n" + self.buff
         print(text, sep='')
         
@@ -492,6 +513,10 @@ class TCA08_device:
                 #self.buff = '1,3,2018-09-05 09:20:00,2018-09-05 09:40:00,2018-09-05 11:20:00,2018-09-05 11:40:00,1618.25,18529.02,58708,0,0,1,0,0,678.83,315.61,1,4,734.11151923016,0.007605128934671236,-0.0008426029126914941,1.2467680585602101e-5,-5.7904734574089255e-8,8.278151418589865e-11,721.7721108681338,0.07058174812424729,-0.0033522482678232687,4.1361800378848836e-5,-1.7473727839550791e-7,2.3652177675724055e-10'
         else:
             self.buff = 'dummy data'
+
+        ## if no response
+        if not len(self.buff):
+            return
 
         text = "-------------------\nONLINERESULT:\n" + self.buff
         print(text, sep='')
@@ -581,6 +606,10 @@ class TCA08_device:
             ## from docs
             self.buff = '39,695,5_arso_20170215mm,2018-01-12 12:36:19,2018-01-12 13:36:19,17520.1621,214100,189335,1.1308,0,1,25,653.0881745453704,2.070347518278751,-0.015783676941518294,5.743388472621944e-5,-9.85991925184398e-8,6.435298788574163e-11,-1921.268617466437,20.638064759183404,- Error in docs'
 
+        ## if no response
+        if not len(self.buff):
+            return
+
         text = "-------------------\nOFFLINERESULT:\n" + self.buff
         print(text, sep='')
 
@@ -614,6 +643,11 @@ class TCA08_device:
             self.buff = (b'\r\n').decode()
             ## from docs
             self.buff = '1,2017-09-26 14:19:05,TCA-08-S00-00000,16.7,0.5,4.91,7.31204978640517e-5,-0.0357400687309517,10.0655216405797,9.76321196119687e-7,-4.46034050051914e-6,0.0185413211101763,11.45,11.45,1,0,1,0,60,300,3,12,57,3,495,3,12,57,3,180,265,265,220,265,265,220,100,50,100,1,25,101.325,0.1.0.0,301,1,UTC,1,0,0,0.45, string from docs'
+
+        ## if no response
+        if not len(self.buff):
+            return
+
         text = "-------------------\nSETUP:\n" + self.buff
         print(text, sep='')
 
@@ -648,6 +682,11 @@ class TCA08_device:
             self.buff = (b'\r\n').decode()
             ## from docs
             self.buff = '283891 5/14/2023 3:24:50 PM 1 1 Command Set Fan 1 set to 0%.'
+
+        ## if no response
+        if not len(self.buff):
+            return
+
         text = "-------------------\nLOG:\n" + self.buff
         print(text, sep='')
 
