@@ -6,11 +6,11 @@ path = "..\\..\\data"
 #
 # TCA08:   Serial Port:
 #
-COM="COM2"
+COM = "COM2"
 #
 #
 # TCA08:  Last Records:
 #
-MINID=943370
+MINID = 943370
 #
 computer='IKMO_Server'

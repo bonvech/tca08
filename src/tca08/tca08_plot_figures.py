@@ -216,7 +216,7 @@ if __name__ == "__main__":
     if not os.path.exists(csvfilename):   
         print(csvfilename, "not exists")
 
-    datum = pd.read_csv(csvfilename)
+    datum = pd.read_csv(csvfilename, on_bad_lines='skip')
     #print(datum)
 
     ## plot OnlineData day
@@ -238,7 +238,7 @@ if __name__ == "__main__":
     dirname = datadirname + filetype + sep
     #filename = dirname + timestamp + "_" + filetype + ".txt"
     filename = dirname + timestamp + "_" + filetype + ".csv"
-    ext = pd.read_csv(filename)
+    ext = pd.read_csv(filename, on_bad_lines='skip')
     ext18 = parse_device_data(ext[ext["DeviceID"] == 18][:], 18)
     #print(ext18)
 

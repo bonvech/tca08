@@ -37,6 +37,7 @@ class TCA08_device:
     def __init__(self):
         self.develop = False ## flag True for develop stage
         self.logfilename = "tca08_log.txt"
+        self.logdirname  = ""
 
         #self.MINID = 0
         #self.MAXID = 0
@@ -62,14 +63,10 @@ class TCA08_device:
             self.sep = '/'  ## -- path separator for LINIX
         else:
             self.sep = '\\' ## -- path separator for Windows
-            
 
-
-        
         ## write to log file
-        message = "\n============================================\n" + str(datetime.now()) + '  start'
+        message = "=====  start  ======"
         self.print_message(message, '\n')
-
 
 
     ## ----------------------------------------------------------------
@@ -79,13 +76,12 @@ class TCA08_device:
         if len(message) == 0:
             return
             
-        print(message)
-
-        #self.logfilename = self.logdirname + "_".join(["_".join(str(datetime.now()).split('-')[:2]), self.device_name.split()[0],  'log.txt'])
+        #devicename = self.device_name.split()[0] if self.device_name else "tca08"
+        devicename = "tca08"
+        self.logfilename = self.logdirname + "_".join(["_".join(str(datetime.now()).split('-')[:2]), devicename, 'log.txt'])
         with open(self.logfilename, 'a') as flog:
-            #flog.write(str(datetime.now()) + ':  ')
-            #flog.write(message + end)
             flog.write(f"{datetime.now()}: {message}{end}")
+        print(message)
 
 
     ## ----------------------------------------------------------------
@@ -105,10 +101,7 @@ class TCA08_device:
         except Exception as err:
             ##  напечатать строку ошибки
             text = f": ERROR in writing to bot: {err}"
-            self.print_message(text)  ## write to log file
-
-
-        
+            self.print_message(text)  ## write to log file  
 
 
     ## ----------------------------------------------------------------
@@ -555,7 +548,7 @@ class TCA08_device:
     ## ----------------------------------------------------------------
     def save_csv_as_xls(self, filename): 
         filenamexls = filename[:-3] + "xlsx"
-        data = pd.read_csv(filename).drop_duplicates()
+        data = pd.read_csv(filename, on_bad_lines= 'skip').drop_duplicates()
         
         ## reformat data columns to datetime and float format
         #data = data.apply(lambda col: 
